@@ -265,6 +265,92 @@ class SFGspectrum():
             outputLorentzians.append(l)
         
         return outputLorentzians
+    
+
+    def fitLorentziansWithAbsorption(self,scannum,goldparams,oscparams,scaling=None,xlim=None,fitrange=None):
+        scan = self.scans[scannum]
+        lw = [sublist[0] for sublist in goldparams]
+        gs = [sublist[1] for sublist in goldparams]
+        up = [sublist[2] for sublist in goldparams]
+        
+        oscnum = len(oscparams)
+        for osc in oscparams:
+            osclw = [sublist[0] for sublist in osc]
+            oscgs = [sublist[1] for sublist in osc]
+            oscup = [sublist[2] for sublist in osc]
+            
+            lw.extend(osclw)
+            gs.extend(oscgs)
+            up.extend(oscup)
+                
+        print(lw)
+        print(gs)
+        print(up)
+            
+
+        def lorentzian(wn,amp,center,gamma,phase):
+            return (amp/(wn-center+1j*gamma))*np.exp(1j*phase)
+        
+        def fitFlexible(wn, gold_amp, gold_center, gold_width, *oscparams):
+            if len(oscparams) % 4 == 0:
+                #first oscillator is the absorption
+                numoscs = int(len(oscparams)/4)-1
+                y = np.zeros(len(wn))
+                for i in range(numoscs):
+                    y = y + lorentzian(wn,oscparams[4*(i+1)],oscparams[4*(i+1)+1],oscparams[4*(i+1)+2],oscparams[4*(i+1)+3])
+                y = y + gold_amp
+                y = np.abs(y)**2*np.exp(-(wn-gold_center)**2/gold_width**2)
+                #the absorption lorentzian
+                y = y - lorentzian(wn,oscparams[1],oscparams[1],oscparams[2],oscparams[3])
+                return y
+            else:
+                print('number of osc params incorrect')
+
+        xdata = scan['wn']
+        ydata = scan['counts']/np.max(scan['counts'])
+        if fitrange is not None:
+            idx1 = np.absolute(xdata-fitrange[1]).argmin()
+            idx2 = np.absolute(xdata-fitrange[0]).argmin()
+            xdata = xdata[idx1:idx2]
+            ydata = ydata[idx1:idx2]
+        
+        popt, pcov = curve_fit(fitFlexible, xdata, ydata, p0=gs,bounds = [lw,up], maxfev = 10000)
+        oscparamfit = popt[3:]
+        plt.figure()
+        plt.plot(xdata,ydata,'o')
+        plt.plot(xdata,fitFlexible(xdata,popt[0],popt[1],popt[2],*oscparamfit))
+        numoscs = int(len(oscparamfit)/4)
+        for i in range(numoscs):
+            plt.plot(xdata,np.sqrt(np.abs(lorentzian(xdata,popt[4*i+3],popt[4*i+4],popt[4*i+5],popt[4*i+6]))**2))
+        if xlim is not None:
+            plt.xlim(xlim[0],xlim[1])
+        ax=plt.gca()
+        x0,x1 = ax.get_xlim()
+        y0,y1 = ax.get_ylim()
+        ax.set_aspect(abs(x1-x0)/abs(y1-y0))
+        plt.title(self.name)
+        plt.xlabel('Wavenumber [cm$^{-1}$]')
+        plt.ylabel('SFG Intensity [a.u.]')
+        set_size(3,3)
+        plt.tight_layout()
+        
+        print()
+        print('gold amp =',  np.round(popt[0],1))
+        print('gold center =',  np.round(popt[1],1))
+        print('gold width =',  np.round(popt[2],1))
+        print()
+        
+        outputLorentzians = []
+        for i in range(int(len(oscparamfit)/4)):
+            l = [oscparamfit[4*i],oscparamfit[4*i+1],oscparamfit[4*i+2],oscparamfit[4*i+3]]
+            print("Osc ",i+1,"amp =", np.round(oscparamfit[4*i],1))
+            print("Osc ",i+1,"center =", np.round(oscparamfit[4*i+1],1))
+            print("Osc ",i+1,"gamma =", np.round(oscparamfit[4*i+2],1))
+            print("Osc ",i+1,"phase =", np.round(np.degrees(oscparamfit[4*i+3]),1))
+            print()
+            outputLorentzians.append(l)
+        
+        return outputLorentzians
 
     def plotLorentzians(self,listLorentzians,xlim=None,ylim=None):
         def lorentzian(wn,amp,center,gamma,phase):
