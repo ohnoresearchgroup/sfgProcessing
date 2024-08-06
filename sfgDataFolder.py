@@ -40,9 +40,9 @@ class SFGdataFolder():
         self.cnFilesCalib = {}
         for name in self.cnNames:
             allSampleFiles = [file for file in self.ascFiles if name == file.split('_')[0]]
-            self.cnFiles[name] = [file for file in allSampleFiles if ((file.split('_')[-2] == 'CN') and ('bg' not in file) and ('4450' not in file))]
+            self.cnFiles[name] = [file for file in allSampleFiles if ((file.split('_')[-2] == 'CN') and ('bg' not in file) and ('4450' not in file) and ('calib' not in file))]
             self.cnFilesBG[name] = [file for file in allSampleFiles if ((file.split('_')[-2] == 'CN') and ('bg' in file))]
-            self.cnFilesCalib[name] = [file for file in allSampleFiles if ((file.split('_')[-2] == 'CN') and ('4450' in file))]
+            self.cnFilesCalib[name] = [file for file in allSampleFiles if ((file.split('_')[-2] == 'CN') and (('4450' in file) or (('calib' in file) and ('bg' not in file))))]
             self.printFilesForName(name,"CN")
             
     def printFilesForName(self,name,stretch):

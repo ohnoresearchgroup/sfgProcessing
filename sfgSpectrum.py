@@ -26,18 +26,13 @@ class SFGspectrum():
         
         #import background spectra
         if self.filesBG[0] is not None:
-            self.bg = pd.read_csv(path + self.filesBG[0], delimiter='\t', names=['wl', 'counts'], skiprows=37, engine='python')
+            for file in self.filesBG:
+                if ('calib' not in file):
+                    self.bg = pd.read_csv(path + file, delimiter='\t', names=['wl', 'counts'], skiprows=37, engine='python')
+                    break
         else:
             print('No background file found')
             return
-        
-        #import calibration spectra
-        self.calib = []
-        for file in self.filesCalib:
-            calib = pd.read_csv(path + file, delimiter='\t', names=['wl', 'counts'], skiprows=37, engine='python')
-            calib['wn'] = convert_SFG_to_IRwn(calib['wl'],1034)
-            self.calib.append(calib)      
-            
         
         #import SFG spectra
         self.scans = []
@@ -50,6 +45,7 @@ class SFGspectrum():
 
             
     def plot(self):
+        plt.figure()
         for scan in self.scans:
             plt.plot(scan['wn'],scan['counts'])
             plt.title('BG corrected scans')
@@ -63,22 +59,27 @@ class SFGspectrum():
             
         
         
-    def psCalib(self,val1,val2,num=0):
+    def calibPS(self,range,num=0):
         print("PS calibration files available: ")
         for file in self.filesCalib:
             print(file)
-            
-        self.ps = self.calib[num]
+
         print("PS calibration with file ",num," chosen.")
-        
+
+        #import calibration spectra
+        file = self.filesCalib[num]
+        self.ps = pd.read_csv(self.path + file, delimiter='\t', names=['wl', 'counts'], skiprows=37, engine='python')
+        self.ps['wn'] = convert_SFG_to_IRwn(self.ps['wl'],1034)
+
+        #plt calibration spectra
         plt.figure()
         plt.plot(self.ps['wn'],self.ps['counts'])
         plt.xlim([2700,3000])
         plt.title('PS Spectrum')
     
         #indexes for the values entered that bound the peak
-        idx1 = (np.abs(self.ps['wn'] - val1)).argmin()
-        idx2 = (np.abs(self.ps['wn'] - val2)).argmin()
+        idx1 = (np.abs(self.ps['wn'] - range[0])).argmin()
+        idx2 = (np.abs(self.ps['wn'] - range[1])).argmin()
         
         #segments within bounds
         xShort = np.abs(self.ps['wn'][idx2:idx1+1].values)
@@ -120,6 +121,92 @@ class SFGspectrum():
         for scan in self.scans:
             scan['wn'] = scan['wn'] - shift
         print('PS Calibration applied.')
+
+    def calibACN(self,range=[2100,2300],initpeak = 2250,shift = None):
+        #if hardcoded shift is entered, perform shift and return
+        if shift is not None:
+            print('Entered shift is ',shift)
+            for scan in self.scans:
+                scan['wn'] = scan['wn'] - shift
+            print('Entered ACN Calibration applied.')
+            return
+            
+        self.acnpeakvalue = 2253.6
+
+        
+        print('ACN calibration file:')
+        self.calibACNfile = [file for file in self.filesCalib if ('bg' not in file) and ('calib' in file)][0]
+        print(self.calibACNfile)
+
+        print('ACN calibration bg file:')
+        self.calibACNbgfile = [file for file in self.filesBG if 'calib' in file][0]
+        print(self.calibACNbgfile)
+
+        self.calibACN = pd.read_csv(self.path + self.calibACNfile, delimiter='\t', names=['wl', 'counts'], skiprows=37, engine='python')
+        self.calibACNbg = pd.read_csv(self.path + self.calibACNbgfile, delimiter='\t', names=['wl', 'counts'], skiprows=37, engine='python')
+        self.calibACN['wn'] = convert_SFG_to_IRwn(self.calibACN['wl'],1034)
+
+        self.calibACN['raw'] = self.calibACN['counts']
+        self.calibACN['counts'] = self.calibACN['counts'] - self.calibACNbg['counts']
+
+        #plt calibration spectra
+        plt.figure()
+        plt.plot(self.calibACN['wn'],self.calibACN['counts'])
+        plt.xlim([2100,2350])
+        plt.title('ACN Calibration')
+
+        #indexes for the values entered that bound the peak
+        idx1 = (np.abs(self.calibACN['wn'] - range[0])).argmin()
+        idx2 = (np.abs(self.calibACN['wn'] - range[1])).argmin()
+        
+        #segments within bounds
+        xShort = np.abs(self.calibACN['wn'][idx2:idx1+1].values)
+        yShort = np.abs(self.calibACN['counts'][idx2:idx1+1].values)
+
+        #gaussian function to fit the segment
+        def twogauss(x,a1,xcen1,sigma1,a2,xcen2,sigma2,off):
+            return -a1*np.exp(-(x-xcen1)**2/(2*sigma1**2)) + a2*np.exp(-(x-xcen2)**2/(2*sigma2**2))+off
+        
+        #initial guesses for the fit                        
+        xcen1 = (range[0]+range[1])/2
+        sigma1 = 20
+        a1 = self.calibACN['counts'].max()/2
+
+        xcen2 = initpeak
+        sigma2 = 20
+        a2 = self.calibACN['counts'].max()
+        off = 0
+        
+        guesses =[a1,xcen1,sigma1,a2,xcen2,sigma2,off]
+        lw = [0,2100,1,0,2100,1,0]
+        up = [self.calibACN['counts'].max(),2300,1000,self.calibACN['counts'].max()*2,2300,1000,self.calibACN['counts'].max()]
+       
+        plt.figure()
+        plt.plot(self.calibACN['wn'][idx2-5:idx1+5],self.calibACN['counts'][idx2-5:idx1+5])
+        
+        #fit 
+        popt,pcov = curve_fit(twogauss,xShort,yShort,p0=guesses,bounds = [lw,up],maxfev = 10000)
+        
+        #plot with fit and points
+        plt.plot(xShort,twogauss(xShort,*popt),'ro:',label='fit')
+        plt.plot(self.calibACN['wn'][idx2],self.calibACN['counts'][idx2],'o',markersize=5)
+        plt.plot(self.calibACN['wn'][idx1],self.calibACN['counts'][idx1],'o',markersize=5)
+        plt.title('Fitted ANC Calibration')
+        
+        #set shift for this peak
+        shift = popt[1]- self.acnpeakvalue
+        print('Fitted ACN peak center:' + str(popt[1]))
+        print('Shift is ',shift)
+        for scan in self.scans:
+            scan['wn'] = scan['wn'] - shift
+        print('ACN Calibration applied.')
+
+
+    def calibCO2(self):
+        return
+
+        
+        
 
         
     def fitgaussians(self,goldparams=None):
