@@ -59,7 +59,7 @@ class SFGspectrum():
             
         
         
-    def calibPS(self,range,num=0):
+    def calibPS(self,fitrange,num=0):
         print("PS calibration files available: ")
         for file in self.filesCalib:
             print(file)
@@ -78,8 +78,8 @@ class SFGspectrum():
         plt.title('PS Spectrum')
     
         #indexes for the values entered that bound the peak
-        idx1 = (np.abs(self.ps['wn'] - range[0])).argmin()
-        idx2 = (np.abs(self.ps['wn'] - range[1])).argmin()
+        idx1 = (np.abs(self.ps['wn'] - fitrange[0])).argmin()
+        idx2 = (np.abs(self.ps['wn'] - fitrange[1])).argmin()
         
         #segments within bounds
         xShort = np.abs(self.ps['wn'][idx2:idx1+1].values)
@@ -90,7 +90,7 @@ class SFGspectrum():
             return -a1*np.exp(-(x-xcen1)**2/(2*sigma1**2)) + a2*np.exp(-(x-xcen2)**2/(2*sigma2**2))+off
         
         #initial guesses for the fit                        
-        xcen1 = (val1+val2)/2
+        xcen1 = (fitrange[0]+fitrange[1])/2
         sigma1 = 20
         a1 = self.ps['counts'].max()/2
 
