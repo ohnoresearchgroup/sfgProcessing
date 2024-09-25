@@ -138,16 +138,9 @@ class SFGspectrum():
         self.calibACNfile = [file for file in self.filesCalib if ('bg' not in file) and ('calib' in file)][0]
         print(self.calibACNfile)
 
-        print('ACN calibration bg file:')
-        self.calibACNbgfile = [file for file in self.filesBG if 'calib' in file][0]
-        print(self.calibACNbgfile)
-
         self.calibACN = pd.read_csv(self.path + self.calibACNfile, delimiter='\t', names=['wl', 'counts'], skiprows=37, engine='python')
-        self.calibACNbg = pd.read_csv(self.path + self.calibACNbgfile, delimiter='\t', names=['wl', 'counts'], skiprows=37, engine='python')
         self.calibACN['wn'] = convert_SFG_to_IRwn(self.calibACN['wl'],1034)
 
-        self.calibACN['raw'] = self.calibACN['counts']
-        self.calibACN['counts'] = self.calibACN['counts'] - self.calibACNbg['counts']
 
         #plt calibration spectra
         plt.figure()
