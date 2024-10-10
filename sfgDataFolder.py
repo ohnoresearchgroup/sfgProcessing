@@ -16,6 +16,12 @@ class SFGdataFolder():
         self.cnNames.sort()
         self.cnSpectra = {name: None for name in self.cnNames}
         print("CN Spectra Available: " ,self.cnNames)
+        
+        self.coNames = list(set([file.rsplit("_",2)[0] for file in self.ascFiles if file.split("_")[-2] == 'CO']))
+        self.coNames.sort()
+        self.coSpectra = {name: None for name in self.coNames}
+        print("CO Spectra Available: " ,self.coNames)        
+        
         print()
         print()
         
@@ -43,6 +49,20 @@ class SFGdataFolder():
             self.cnFiles[name] = [file for file in allSampleFiles if ((file.split('_')[-2] == 'CN') and ('bg' not in file) and ('4450' not in file) and ('calib' not in file))]
             self.cnFilesBG[name] = [file for file in allSampleFiles if ((file.split('_')[-2] == 'CN') and ('bg' in file))]
             self.cnFilesCalib[name] = [file for file in allSampleFiles if ((file.split('_')[-2] == 'CN') and (('4450' in file) or (('calib' in file) and ('bg' not in file))))]
+            self.printFilesForName(name,"CN")
+            
+            
+        print("CO:")
+        print()
+        print()        
+        self.coFiles = {}
+        self.coFilesBG = {}
+        self.coFilesCalib = {}
+        for name in self.coNames:
+            allSampleFiles = [file for file in self.ascFiles if name == file.split('_')[0]]
+            self.coFiles[name] = [file for file in allSampleFiles if ((file.split('_')[-2] == 'CO') and ('bg' not in file) and ('4450' not in file) and ('calib' not in file))]
+            self.coFilesBG[name] = [file for file in allSampleFiles if ((file.split('_')[-2] == 'CO') and ('bg' in file))]
+            self.coFilesCalib[name] = [file for file in allSampleFiles if ((file.split('_')[-2] == 'CO') and (('4450' in file) or (('calib' in file) and ('bg' not in file))))]
             self.printFilesForName(name,"CN")
             
     def printFilesForName(self,name,stretch):
@@ -78,6 +98,22 @@ class SFGdataFolder():
                 print(file)
             print()
             print()
+        elif stretch == 'CO':
+            print("Sample Name: {}".format(name))
+            print()
+            print("Spectra Available:")
+            for file in self.coFiles[name]:
+                print(file)
+            print()
+            print("Background Available:")
+            for file in  self.coFilesBG[name]:
+                print(file)
+            print()
+            print("Calibration:")
+            for file in self.coFilesCalib[name]:
+                print(file)
+            print()
+            print()     
             
         else:
             print("No available stretch specified.")
@@ -100,6 +136,14 @@ class SFGdataFolder():
                 print('Processing CH spectrum: ', name)
                 self.printFilesForName(name,'CH')
                 return SFGspectrum(self.path,stretch,name,self.chFiles[name],self.chFilesBG[name],self.chFilesCalib[name],skip)
+        elif stretch == "CO":
+            if number >= len(self.coNames):
+                print('Number greater than available CO spectra')
+            else:
+                name = self.coNames[number]
+                print('Processing CO spectrum: ', name)
+                self.printFilesForName(name,'CO')
+                return SFGspectrum(self.path,stretch,name,self.coFiles[name],self.coFilesBG[name],self.coFilesCalib[name],skip)
         else:
             print("No available stretch specified.")        
         
