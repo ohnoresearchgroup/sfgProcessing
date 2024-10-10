@@ -63,7 +63,7 @@ class SFGdataFolder():
             self.coFiles[name] = [file for file in allSampleFiles if ((file.split('_')[-2] == 'CO') and ('bg' not in file) and ('4450' not in file) and ('calib' not in file))]
             self.coFilesBG[name] = [file for file in allSampleFiles if ((file.split('_')[-2] == 'CO') and ('bg' in file))]
             self.coFilesCalib[name] = [file for file in allSampleFiles if ((file.split('_')[-2] == 'CO') and (('4450' in file) or (('calib' in file) and ('bg' not in file))))]
-            self.printFilesForName(name,"CN")
+            self.printFilesForName(name,"CO")
             
     def printFilesForName(self,name,stretch):
         if stretch == 'CN':
