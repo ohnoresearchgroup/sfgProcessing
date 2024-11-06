@@ -5,7 +5,7 @@ class SFGdataFolder():
     def __init__(self,path):
         self.path = path
         self.allFiles = os.listdir(path)
-        self.ascFiles = [file for file in self.allFiles if file.endswith(".asc")]
+        self.ascFiles = [file for file in self.allFiles if (file.endswith(".asc") or file.endswith(".csv"))]
         
         self.chNames = list(set([file.rsplit("_",2)[0] for file in self.ascFiles if file.split("_")[-2] == 'CH']))
         self.chNames.sort()

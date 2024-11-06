@@ -28,7 +28,12 @@ class SFGspectrum():
         if self.filesBG[0] is not None:
             for file in self.filesBG:
                 if ('calib' not in file):
-                    self.bg = pd.read_csv(path + file, delimiter='\t', names=['wl', 'counts'], skiprows=37, engine='python')
+                    if file.endswith(".asc"):
+                        self.bg = self.importAndor(path + file)
+                    elif file.endswith(".csv"):
+                        self.bg = self.importPI(path + file)
+                    else:
+                        print('not correct file type.')
                     break
         else:
             print('No background file found')
@@ -37,11 +42,27 @@ class SFGspectrum():
         #import SFG spectra
         self.scans = []
         for file in self.files:
-            scan = pd.read_csv(path + file, delimiter='\t', names=['wl', 'counts'], skiprows=37, engine='python')
+            if file.endswith(".asc"):
+                scan = self.importAndor(path + file)
+            elif file.endswith(".csv"):
+                scan = self.importPI(path + file)
+            else:
+                print('not correct file type.')
             scan['wn'] = convert_SFG_to_IRwn(scan['wl'],1034)
             scan['raw'] = scan['counts']
             scan['counts'] = scan['counts'] - self.bg['counts']
             self.scans.append(scan)
+            
+    def importAndor(self,name):
+        df = pd.read_csv(name, delimiter='\t', names=['wl', 'counts'], skiprows=37, engine='python')
+        return df
+    
+    def importPI(self,name):
+        df = pd.read_csv(name)
+        df.drop(['ROI','Frame','Row','Column'], axis = 1, inplace = True)
+        df.rename(columns={'Wavelength': 'wl', 'Intensity': 'counts'}, inplace=True)
+        return df
+        
 
             
     def plot(self):
@@ -68,7 +89,12 @@ class SFGspectrum():
 
         #import calibration spectra
         file = self.filesCalib[num]
-        self.ps = pd.read_csv(self.path + file, delimiter='\t', names=['wl', 'counts'], skiprows=37, engine='python')
+        if file.endswith(".asc"):
+            self.ps = self.importAndor(self.path + file)
+        elif file.endswith(".csv"):
+            self.ps = self.importPI(self.path + file)
+        else:
+            print('not correct file type.')
         self.ps['wn'] = convert_SFG_to_IRwn(self.ps['wl'],1034)
 
         #plt calibration spectra
@@ -137,8 +163,14 @@ class SFGspectrum():
         print('ACN calibration file:')
         self.calibACNfile = [file for file in self.filesCalib if ('bg' not in file) and ('calib' in file)][0]
         print(self.calibACNfile)
+        
+        if self.calibACNfile.endswith(".asc"):
+            self.calibACN = self.importAndor(self.path +  self.calibACNfile)
+        elif self.calibACNfile.endswith(".csv"):
+            self.calibACN = self.importPI(self.path +  self.calibACNfile)
+        else:
+            print('not correct file type.')
 
-        self.calibACN = pd.read_csv(self.path + self.calibACNfile, delimiter='\t', names=['wl', 'counts'], skiprows=37, engine='python')
         self.calibACN['wn'] = convert_SFG_to_IRwn(self.calibACN['wl'],1034)
 
 
