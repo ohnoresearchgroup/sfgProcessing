@@ -57,11 +57,29 @@ class SFGspectrum():
         df = pd.read_csv(name, delimiter='\t', names=['wl', 'counts'], skiprows=37, engine='python')
         return df
     
-    def importPI(self,name):
+    def importPI(self,name):        
         df = pd.read_csv(name)
-        df.drop(['ROI','Frame','Row','Column'], axis = 1, inplace = True)
-        df.rename(columns={'Wavelength': 'wl', 'Intensity': 'counts'}, inplace=True)
-        return df
+        numFrames = df['Frame'].max()
+        counts = np.zeros(1340)
+        ind_dfs = []
+        for i in range(numFrames):
+            filtered_df = df[df['Frame'] == i + 1]
+            filtered_df = filtered_df.reset_index(drop=True)
+            #add up intensity from individual frames
+            counts = counts + filtered_df['Intensity'].values
+            
+            #rename column for intensity of individual frame
+            newname = 'Frame' + str(i+1)
+            filtered_df.rename(columns={'Intensity': newname }, inplace=True)
+            ind_dfs.append(filtered_df)
+        
+        #combine each dataframe, dropping duplicate columns
+        df_combined = pd.concat(ind_dfs, axis=1).loc[:, ~pd.concat(ind_dfs, axis=1).columns.duplicated()]
+        df_combined['counts'] = counts
+        df_combined.drop(['ROI','Frame','Row','Column'], axis = 1, inplace = True)
+        df_combined.rename(columns={'Wavelength': 'wl'}, inplace=True)
+        
+        return df_combined
         
 
             
