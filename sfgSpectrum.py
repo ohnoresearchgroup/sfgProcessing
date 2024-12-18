@@ -7,6 +7,7 @@ from scipy.signal import savgol_filter
 from scipy.optimize import curve_fit
 from scipy import exp
 import os
+import copy
 
 class SFGspectrum():
     def __init__(self,path,stretch,name,files,filesBG,filesCalib,skip=None):
@@ -95,6 +96,16 @@ class SFGspectrum():
         plt.title("Scan: " + str(scannum))
         if xlim is not None:
             plt.xlim(xlim[0],xlim[1])
+
+    def corrEtalon(self,blank_interpolate):
+        # if hasn't been done before, create deep copy in scans_uncorr
+        if not hasattr(self, 'scans_uncorr'):
+            self.scans_uncorr = copy.deepcopy(self.scans)
+
+        for idx,scan in enumerate(self.scans):
+            interped = blank_interpolate(scan['wn'])
+            scan['counts'] = self.scans_uncorr[idx]['counts']/interped
+        
             
         
         
@@ -165,6 +176,7 @@ class SFGspectrum():
         for scan in self.scans:
             scan['wn'] = scan['wn'] - shift
         print('PS Calibration applied.')
+
 
     def calibACN(self,range=[2100,2300],initpeak = 2250,shift = None):
         #if hardcoded shift is entered, perform shift and return
