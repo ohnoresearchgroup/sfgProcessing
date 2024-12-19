@@ -2,7 +2,7 @@ import os
 from sfgSpectrum import SFGspectrum
 
 class SFGdataFolder():
-    def __init__(self,path):
+    def __init__(self,path,hide=True):
         self.path = path
         self.allFiles = os.listdir(path)
         self.ascFiles = [file for file in self.allFiles if (file.endswith(".asc") or file.endswith(".csv"))]
@@ -24,10 +24,11 @@ class SFGdataFolder():
         
         print()
         print()
-        
-        print("CH:")
-        print()
-        print()
+
+        if hide == False:
+            print("CH:")
+            print()
+            print()
         self.chFiles = {}
         self.chFilesBG = {}
         self.chFilesCalib = {}
@@ -36,11 +37,12 @@ class SFGdataFolder():
             self.chFiles[name] = [file for file in allSampleFiles if ((file.split('_')[-2] == 'CH') and ('bg' not in file))]
             self.chFilesBG[name] = [file for file in allSampleFiles if ((file.split('_')[-2] == 'CH') and ('bg' in file))]
             self.chFilesCalib[name] = [file for file in allSampleFiles if ('_pp_' in file) or ('_ps_' in file)]
-            self.printFilesForName(name,"CH")
-      
-        print("CN:")
-        print()
-        print()        
+            if hide == False:
+                self.printFilesForName(name,"CH")
+        if hide == False:
+            print("CN:")
+            print()
+            print()        
         self.cnFiles = {}
         self.cnFilesBG = {}
         self.cnFilesCalib = {}
@@ -49,12 +51,13 @@ class SFGdataFolder():
             self.cnFiles[name] = [file for file in allSampleFiles if ((file.split('_')[-2] == 'CN') and ('bg' not in file) and ('4450' not in file) and ('calib' not in file))]
             self.cnFilesBG[name] = [file for file in allSampleFiles if ((file.split('_')[-2] == 'CN') and ('bg' in file))]
             self.cnFilesCalib[name] = [file for file in allSampleFiles if ((file.split('_')[-2] == 'CN') and (('4450' in file) or (('calib' in file) and ('bg' not in file))))]
-            self.printFilesForName(name,"CN")
+            if hide == False:
+                self.printFilesForName(name,"CN")
             
-            
-        print("CO:")
-        print()
-        print()        
+        if hide == False: 
+            print("CO:")
+            print()
+            print()        
         self.coFiles = {}
         self.coFilesBG = {}
         self.coFilesCalib = {}
@@ -63,7 +66,8 @@ class SFGdataFolder():
             self.coFiles[name] = [file for file in allSampleFiles if ((file.split('_')[-2] == 'CO') and ('bg' not in file) and ('4450' not in file) and ('calib' not in file))]
             self.coFilesBG[name] = [file for file in allSampleFiles if ((file.split('_')[-2] == 'CO') and ('bg' in file))]
             self.coFilesCalib[name] = [file for file in allSampleFiles if ((file.split('_')[-2] == 'CO') and (('4450' in file) or (('calib' in file) and ('bg' not in file))))]
-            self.printFilesForName(name,"CO")
+            if hide == False:
+                self.printFilesForName(name,"CO")
             
     def printFilesForName(self,name,stretch):
         if stretch == 'CN':

@@ -8,6 +8,7 @@ from scipy.optimize import curve_fit
 from scipy import exp
 import os
 import copy
+from scipy.interpolate import interp1d
 
 class SFGspectrum():
     def __init__(self,path,stretch,name,files,filesBG,filesCalib,skip=None):
@@ -97,14 +98,63 @@ class SFGspectrum():
         if xlim is not None:
             plt.xlim(xlim[0],xlim[1])
 
-    def corrEtalon(self,blank_interpolate):
+    def setBlank(self):
+        #set blank interpolation function
+        blank = self.gaussiannorm
+        x = self.scans[0]['wn']
+        return interp1d(x, blank, kind='linear', fill_value="extrapolate")
+
+    def checkEtalonCorrection(self,blank_interpolate,guess = None):
+        self.blank_interpolate = blank_interpolate
+
+        # if doesn't have gaussian norm, create guassian norm
+        if not hasattr(self, 'gaussiannorm'):
+            self.fitgaussians()
+
+        y = self.gaussiannorm
+        x = self.scans[0]['wn']
+
+        correcteds = []
+        for i in range(25):
+            blank_i = self.blank_interpolate(x + i)
+            corrected_i = y/blank_i
+            correcteds.append(corrected_i)
+
+        plt.figure()
+        for idx,corrected in enumerate(correcteds):
+            plt.plot(x,corrected+idx)
+        plt.xlim([2100,2225])
+        plt.ylim([0,26])
+        ax=plt.gca()
+        x0,x1 = ax.get_xlim()
+        y0,y1 = ax.get_ylim()
+        ax.set_aspect(abs(x1-x0)/abs(y1-y0)*2)
+
+        if guess is not None:
+            i = guess - 1
+            plt.figure()
+            plt.plot(x,correcteds[i-1],label = str(i))
+            plt.plot(x,correcteds[i],label = str(i+1))
+            plt.plot(x,correcteds[i+1],label = str(i+2))
+            plt.xlim([2100,2225])
+            plt.ylim([0,2])
+            plt.legend()
+            ax=plt.gca()
+            x0,x1 = ax.get_xlim()
+            y0,y1 = ax.get_ylim()
+            ax.set_aspect(abs(x1-x0)/abs(y1-y0))
+        
+        
+    def corrEtalon(self,idx):
         # if hasn't been done before, create deep copy in scans_uncorr
         if not hasattr(self, 'scans_uncorr'):
             self.scans_uncorr = copy.deepcopy(self.scans)
 
+        x = self.scans[0]['wn']
+        blank = self.blank_interpolate(x + idx-1)
+
         for idx,scan in enumerate(self.scans):
-            interped = blank_interpolate(scan['wn'])
-            scan['counts'] = self.scans_uncorr[idx]['counts']/interped
+            scan['counts'] = self.scans_uncorr[idx]['counts']/blank
         
             
         
