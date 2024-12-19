@@ -267,9 +267,9 @@ class SFGspectrum():
     def fitgaussians(self,goldparams=None):
         if goldparams == None:
             if self.stretch == 'CN':
-                goldparams = ([0,20000,500000],[1800,2100,2300],[0,50,1000])
+                goldparams = ([0,20000,2000000],[1800,2100,2300],[0,50,1000])
             elif self.stretch == 'CH':
-                goldparams = ([0,20000,500000],[2700,2900,3100],[0,50,1000])
+                goldparams = ([0,20000,2000000],[2700,2900,3100],[0,50,1000])
         
         guesses = [goldparams[0][1],goldparams[1][1],goldparams[2][1]]
         lw = [goldparams[0][0],goldparams[1][0],goldparams[2][0]]
