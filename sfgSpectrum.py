@@ -104,8 +104,15 @@ class SFGspectrum():
         x = self.scans[0]['wn']
         return interp1d(x, blank, kind='linear', fill_value="extrapolate")
 
-    def checkEtalonCorrection(self,blank_interpolate,guess = None):
+    def checkEtalonCorrection(self,blank_interpolate, guess = None, region = 'CH'):
         self.blank_interpolate = blank_interpolate
+
+        if region == 'CH':
+            xlims = [2750,3050]
+        elif region == 'CN':
+            xlims = [2100,2225]
+        else:
+            print("unknown region: " + region)
 
         # if doesn't have gaussian norm, create guassian norm
         if not hasattr(self, 'gaussiannorm'):
@@ -123,7 +130,7 @@ class SFGspectrum():
         plt.figure()
         for idx,corrected in enumerate(correcteds):
             plt.plot(x,corrected+idx)
-        plt.xlim([2100,2225])
+        plt.xlim(xlims)
         plt.ylim([0,26])
         ax=plt.gca()
         x0,x1 = ax.get_xlim()
@@ -136,7 +143,7 @@ class SFGspectrum():
             plt.plot(x,correcteds[i-1],label = str(i))
             plt.plot(x,correcteds[i],label = str(i+1))
             plt.plot(x,correcteds[i+1],label = str(i+2))
-            plt.xlim([2100,2225])
+            plt.xlim(xlims)
             plt.ylim([0,2])
             plt.legend()
             ax=plt.gca()
