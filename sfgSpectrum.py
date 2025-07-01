@@ -435,7 +435,7 @@ class SFGspectrum():
         if self.stretch == 'CH':
             plt.xlim([2750, 3050])
         if self.stretch == 'CN':
-            plt.xlim([2100, 2225])
+            plt.xlim([2100, 2250])
         plt.ylim([0, 2])
         ax=plt.gca()
         x0,x1 = ax.get_xlim()
