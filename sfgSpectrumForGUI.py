@@ -11,21 +11,21 @@ import copy
 from scipy.interpolate import interp1d
 
 class SFGspectrumForGUI():
-    def __init__(self,path,stretch,name,files,filesBG,filesCalib,skip=None):
+    def __init__(self,path,region,name,filesSFG,filesBG,filesCalib,skip=None):
 
         self.path = path
-        self.stretch = stretch
+        self.region = region
         self.name = name
         self.shift = 0
         
-        self.files = files
+        self.filesSFG = filesSFG
         self.filesBG = filesBG
         self.filesCalib = filesCalib
         
         #skip files of names given to skip
         if skip is not None:
             for skipfile in skip:
-                self.files = [f for f in self.files if skipfile not in f]    
+                self.filesSFG = [f for f in self.filesSFG if skipfile not in f]    
         
         #import background spectra
         if self.filesBG[0] is not None:
@@ -46,7 +46,7 @@ class SFGspectrumForGUI():
         
         #import SFG spectra
         self.scans = []
-        for file in self.files:
+        for file in self.filesSFG:
             if file.endswith(".asc"):
                 fullpath = os.path.join(path,file)
                 scan = self.importAndor(fullpath)
@@ -177,10 +177,10 @@ class SFGspectrumForGUI():
         return
         
             
-    def fit_calib(self,region,fitrange):
-        if region == 'CH':
+    def fit_calib(self,fitrange):
+        if self.region == 'CH':
             fig = self.fit_calibPS(fitrange)
-        elif region =='CN':
+        elif self.region =='CN':
             fig = self.fit_calibACN(fitrange)
         else:
             print("No calibration code for that region")
