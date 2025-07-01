@@ -31,9 +31,11 @@ class SFGspectrum():
             for file in self.filesBG:
                 if ('calib' not in file):
                     if file.endswith(".asc"):
-                        self.bg = self.importAndor(path + file)
+                        fullpath = os.path.join(path,file)
+                        self.bg = self.importAndor(fullpath)
                     elif file.endswith(".csv"):
-                        self.bg = self.importPI(path + file)
+                        fullpath = os.path.join(path,file)
+                        self.bg = self.importPI(fullpath)
                     else:
                         print('not correct file type.')
                     break
@@ -45,9 +47,11 @@ class SFGspectrum():
         self.scans = []
         for file in self.files:
             if file.endswith(".asc"):
-                scan = self.importAndor(path + file)
+                fullpath = os.path.join(path,file)
+                scan = self.importAndor(fullpath)
             elif file.endswith(".csv"):
-                scan = self.importPI(path + file)
+                fullpath = os.path.join(path,file)
+                scan = self.importPI(fullpath)
             else:
                 print('not correct file type.')
             scan['wn'] = convert_SFG_to_IRwn(scan['wl'],1034)
