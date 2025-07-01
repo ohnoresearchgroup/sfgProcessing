@@ -166,7 +166,7 @@ class SFGspectrum():
             
         
         
-    def calibPS(self,fitrange,num=0):
+    def calibPS(self,fitrange,num=0,second = None):
         print("PS calibration files available: ")
         for file in self.filesCalib:
             print(file)
@@ -229,10 +229,74 @@ class SFGspectrum():
         
         #set shift for this peak
         shift = popt[1]-2850.13
-        print('Shift is ',shift)
-        for scan in self.scans:
-            scan['wn'] = scan['wn'] - shift
-        print('PS Calibration applied.')
+        print('1st shift is ',shift)
+
+        #also calibrate to the second peak    
+        if second is not None:
+                #plt calibration spectra
+            plt.figure()
+            plt.plot(self.ps['wn'],self.ps['counts'])
+            plt.xlim([2900,3100])
+            plt.title('PS Spectrum 2')
+
+            #indexes for the values entered that bound the peak
+            idx1 = (np.abs(self.ps['wn'] - second[0])).argmin()
+            idx2 = (np.abs(self.ps['wn'] - second[1])).argmin()
+        
+            #segments within bounds
+            xShort = np.abs(self.ps['wn'][idx2:idx1+1].values)
+            yShort = np.abs(self.ps['counts'][idx2:idx1+1].values)
+
+            #initial guesses for the fit                        
+            xcen1 = (second[0]+second[1])/2
+            sigma1 = 20
+            a1 = self.ps['counts'].max()/2
+
+            xcen2 = 3000
+            sigma2 = 200
+            a2 = self.ps['counts'].max()
+            off = 0
+        
+            guesses =[a1,xcen1,sigma1,a2,xcen2,sigma2,off]
+            lw = [0,2700,1,0,2700,10,0]
+            up = [self.ps['counts'].max(),3200,50,self.ps['counts'].max()*2,3200,1000,self.ps['counts'].max()]
+       
+            plt.figure()
+            plt.plot(self.ps['wn'][idx2-5:idx1+5],self.ps['counts'][idx2-5:idx1+5])
+        
+            #fit 
+            popt,pcov = curve_fit(twogauss,xShort,yShort,p0=guesses,bounds = [lw,up],maxfev = 10000)
+        
+            #plot with fit and points
+            plt.plot(xShort,twogauss(xShort,*popt),'ro:',label='fit')
+            plt.plot(self.ps['wn'][idx2],self.ps['counts'][idx2],'o',markersize=5)
+            plt.plot(self.ps['wn'][idx1],self.ps['counts'][idx1],'o',markersize=5)
+            plt.title('2nd Fitted PS Calibration')
+
+            #set shift for this peak
+            shift2 = popt[1]-3001.40
+            print('2nd shift is ',shift2)
+
+            totalshift = (shift+shift2)/2
+            print("Total shift is ", totalshift)
+
+            for scan in self.scans:
+                scan['wn'] = scan['wn'] - totalshift
+                
+            print('Double PS calibration applied.')
+        else:
+            for scan in self.scans:
+                scan['wn'] = scan['wn'] - shift
+            print('Single Calibration applied.')
+
+        #plt calibration spectra
+        plt.figure()
+        plt.plot(scan['wn'],self.ps['counts'])
+        plt.xlim([2700,3100])
+        plt.title('Calibrated PS Spectrum')
+
+
+        
 
 
     def calibACN(self,range=[2100,2300],initpeak = 2250,shift = None):
