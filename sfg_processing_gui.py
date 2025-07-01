@@ -1,7 +1,9 @@
 import os
 import tkinter as tk
 from tkinter import filedialog, ttk, Toplevel, Label
-from sfgSpectrum import SFGspectrum
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from sfgSpectrumForGUI import SFGspectrumForGUI
 
 
 # organize spectra into lists based on the region
@@ -91,9 +93,10 @@ class FolderOrganizerApp:
         
     #open spectrum window
     def process_spectrum(self, title, name, region):
+        #find list of all files with this name
         all_sample_files = [file for file in self.asc_files if name == file.split('_')[0]]
-        #print(all_sample_files)
         
+        #find the SFG, bg, and calib files associated with this name
         if region == "CH":
             sfg_files = [file for file in all_sample_files if ((file.split('_')[-2] == 'CH') and ('bg' not in file))]
             bg_files = [file for file in all_sample_files if ((file.split('_')[-2] == 'CH') and ('bg' in file))]
@@ -107,16 +110,134 @@ class FolderOrganizerApp:
             bg_files = [file for file in all_sample_files if ((file.split('_')[-2] == 'CO') and ('bg' in file))]
             calib_files = [file for file in all_sample_files if ((file.split('_')[-2] == 'CO') and (('4450' in file) or (('calib' in file) and ('bg' not in file))))]
             
-        #print(sfg_files)
-        #print(bg_files)
-        #print(calib_files)
+        spectrum_processing_win = Toplevel()
+        spectrum_processing_win.title(title)
+        spectrum_processing_win.geometry("800x1600")
+        Label(spectrum_processing_win, text=f"{title} selected: {name}", font=("Arial", 14)).pack(pady=20)
         
-        spectrum = SFGspectrum(self.path,region,name,sfg_files,bg_files,calib_files)
+        # Create a parent frame to hold 4 panels
+        grid_frame = tk.Frame(spectrum_processing_win)
+        grid_frame.pack(fill=tk.BOTH, expand=True)
+
+        # Define 2x2 layout
+        panels = [[tk.Frame(grid_frame, bd=2, relief=tk.GROOVE) for j in range(2)] for i in range(2)]
+        for i in range(2):
+            for j in range(2):
+                panels[i][j].grid(row=i, column=j, sticky="nsew", padx=5, pady=5)
+
+        # Make the grid cells expand equally
+        for i in range(2):
+            grid_frame.rowconfigure(i, weight=1)
+            grid_frame.columnconfigure(i, weight=1)
         
-        new_win = Toplevel()
-        new_win.title(title)
-        new_win.geometry("300x100")
-        Label(new_win, text=f"{title} selected: {name}", font=("Arial", 14)).pack(pady=20)
+        #create the spectrum from this list
+        spectrum = SFGspectrumForGUI(self.path,region,name,sfg_files,bg_files,calib_files)
+        
+        #initialize variable holding canvas
+        self.canvas_calibplot = None
+        self.canvas_allplot = None
+        
+        # ==== TOP LEFT: PLOT OF ALL SPECTRA ====
+        
+        def update_all_plot():        
+            all_fig = spectrum.plot()
+            
+            #if 
+            if self.canvas_allplot is not None:
+                self.canvas_allplot.get_tk_widget().destroy()
+        
+            # Embed the plot into the Tkinter window
+            self.canvas_allplot = FigureCanvasTkAgg(all_fig, master=panels[0][0])
+            self.canvas_allplot.draw()
+            self.canvas_allplot.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+        
+        
+        # ==== TOP RIGHT: CALIBRATION ====
+        
+        # Create subframe for layout within top-right panel
+        top_right_inner = tk.Frame(panels[0][1])
+        top_right_inner.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        
+        # Entry fields for numeric input
+        entry_frame = tk.Frame(top_right_inner)
+        entry_frame.pack(pady=5)
+        
+        tk.Label(entry_frame, text="Lower Limit:").grid(row=0, column=0, padx=2)
+        x1_entry = tk.Entry(entry_frame, width=6)
+        x1_entry.grid(row=0, column=1, padx=2)
+        x1_entry.insert(0, "2820")  # Default value for X Max
+        
+        tk.Label(entry_frame, text="Upper Limit:").grid(row=0, column=2, padx=2)
+        x2_entry = tk.Entry(entry_frame, width=6)
+        x2_entry.grid(row=0, column=3, padx=2)
+        x2_entry.insert(0, "2875")  # Default value for X Max
+        
+        # Read-only Entry
+        tk.Label(entry_frame, text="Shift:").grid(row=1, column=0, padx=2)
+        shift_entry = tk.Entry(entry_frame, width=10, state="readonly")
+        shift_entry.grid(row=1, column = 2, padx=2)
+        shift_entry.insert(0, "0")
+        
+        def update_shift_entry(value):
+            shift_entry.config(state="normal")     # Enable writing
+            shift_entry.delete(0, tk.END)          # Clear current content
+            shift_entry.insert(0, str(value))      # Insert new value
+            shift_entry.config(state="readonly")   # Set back to read-only
+            
+
+
+
+        
+        # Function to update the plot based on entry values
+        def update_calib_plot():
+            try:
+                x1 = float(x1_entry.get())
+                x2 = float(x2_entry.get())
+                
+                fig_calib = spectrum.fit_calib(region,(x1,x2))
+                
+                update_shift_entry(spectrum.shift)
+                
+                #if 
+                if self.canvas_calibplot is not None:
+                    self.canvas_calibplot.get_tk_widget().destroy()
+                
+                # Create second plot
+                self.canvas_calibplot = FigureCanvasTkAgg(fig_calib, master=top_right_inner)
+                self.canvas_calibplot.draw()
+                self.canvas_calibplot.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+                
+            except ValueError:
+                print("Invalid input — please enter numeric values.")
+                return
+        
+        
+
+            
+        
+        
+        #apply calibration
+        def apply_calibration(spectrum):
+            spectrum.apply_calib()
+            update_all_plot()
+            return
+        
+        # Buttons
+        button_frame = tk.Frame(top_right_inner)
+        button_frame.pack(pady=5)
+        
+        tk.Button(button_frame, text="Update", command=update_calib_plot).pack(side=tk.LEFT, padx=5)
+        tk.Button(button_frame, text="Apply", command=apply_calibration(spectrum)).pack(side=tk.LEFT, padx=5)
+        
+        update_all_plot()
+        update_calib_plot()
+
+        # ==== Other Panels ====
+        tk.Label(panels[1][0], text="Bottom-Left Panel").pack()
+        tk.Label(panels[1][1], text="Bottom-Right Panel").pack()
+        
+        
+        
 
     def set_combobox_width(self,combobox, items):
         if items:
@@ -124,7 +245,7 @@ class FolderOrganizerApp:
             combobox.config(width=max_len + 10)  # add a bit of padding
             combobox['values'] = items
 
-    # Example user-defined functions (replace with your own logic)
+    # process the spectrum that is selected in the dropdown menu
     def on_ch_button_click(self,name):
         self.process_spectrum("Processing CH Spectrum", name,'CH')
 
