@@ -39,6 +39,7 @@ class ProcessingWindow:
         #initialize variable holding canvases for figures
         self.canvas_calibplot = None
         self.canvas_allplot = None
+        self.canvas_oneplot = None
         
         # ==== TOP LEFT: PLOT OF ALL SPECTRA ====
         
@@ -73,7 +74,7 @@ class ProcessingWindow:
         tk.Label(entry_frame, text="Upper Limit:").grid(row=0, column=2, padx=2)
         x2_entry = tk.Entry(entry_frame, width=6)
         x2_entry.grid(row=0, column=3, padx=2)
-        x2_entry.insert(0, "2875")  # Default value for X Max
+        x2_entry.insert(0, "2860")  # Default value for X Max
         
         # Read-only Entry
         tk.Label(entry_frame, text="Shift:").grid(row=1, column=0, padx=2)
@@ -117,6 +118,7 @@ class ProcessingWindow:
         def apply_calibration():
             self.spectrum.apply_calib()
             update_all_plot()
+            update_one_plot()
             return
         
         # Buttons
@@ -129,6 +131,62 @@ class ProcessingWindow:
         update_all_plot()
         update_calib_plot()
 
-        # ==== Other Panels ====
-        tk.Label(panels[1][0], text="Bottom-Left Panel").pack()
+        # === LOWER LEFT ====
+        def on_int_dropdown(event):
+            update_one_plot()
+        
+        lower_left_inner = tk.Frame(panels[1][0])
+        lower_left_inner.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        #lower_left_inner.rowconfigure(1, weight=1)
+        #lower_left_inner.columnconfigure(0, weight=1)
+        
+        # Entry fields for numeric input
+        ll_entry_frame = tk.Frame(lower_left_inner)
+        ll_entry_frame.pack(pady=5)
+        
+        # List of integers to choose from
+        integer_options = list(range(0, self.spectrum.num_scans))  # 0 through number of scans
+        int_dropdown_var = tk.StringVar(value=str(integer_options[0]))  # default is first
+
+        # Create read-only dropdown menu
+        int_dropdown = ttk.Combobox(ll_entry_frame,textvariable=int_dropdown_var,values=[str(i) for i in integer_options],
+            state='readonly',width=10,justify='center')
+        int_dropdown.grid(row=0, column=0, padx=2)
+        #bind function of new plot
+        int_dropdown.bind("<<ComboboxSelected>>",on_int_dropdown)
+        
+        tk.Label(ll_entry_frame, text="Lower Limit:").grid(row=0, column=1, padx=2)
+        one_x1_entry = tk.Entry(ll_entry_frame, width=6)
+        one_x1_entry.grid(row=0, column=2, padx=2)
+        one_x1_entry.insert(0, "2600")  # Default value for X Max
+        
+        tk.Label(ll_entry_frame, text="Upper Limit:").grid(row=0, column=3, padx=2)
+        one_x2_entry = tk.Entry(ll_entry_frame, width=6)
+        one_x2_entry.grid(row=0, column=4, padx=2)
+        one_x2_entry.insert(0, "3200")  # Default value for X Max
+        
+            
+        def update_one_plot():
+            scan = int(int_dropdown_var.get())
+            x1 = float(one_x1_entry.get())
+            x2 = float(one_x2_entry.get())
+            
+            one_fig = self.spectrum.plotScan(scan,xlim = [x1,x2])
+            
+            #if 
+            if self.canvas_oneplot is not None:
+                self.canvas_oneplot.get_tk_widget().destroy()
+        
+            # Embed the plot into the Tkinter window
+            self.canvas_oneplot = FigureCanvasTkAgg(one_fig, master=lower_left_inner)
+            self.canvas_oneplot.draw()
+            self.canvas_oneplot.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+        
+        
+
+        
+        update_one_plot()
+        
+        
+        # ==== LOWER RIGHT ====
         tk.Label(panels[1][1], text="Bottom-Right Panel").pack()

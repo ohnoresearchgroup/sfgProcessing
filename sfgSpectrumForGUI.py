@@ -59,6 +59,10 @@ class SFGspectrumForGUI():
             scan['raw'] = scan['counts']
             scan['counts'] = scan['counts'] - self.bg['counts']
             self.scans.append(scan)
+            
+        #store number of scans
+        self.num_scans = len(self.scans)
+            
         #create a deep copy that holds uncalibrated wavenumbers    
         self.scans_uncorr = copy.deepcopy(self.scans)
             
@@ -101,11 +105,12 @@ class SFGspectrumForGUI():
         return fig
             
     def plotScan(self,scannum,xlim=None):
-        plt.figure()
+        fig = plt.figure()
         plt.plot(self.scans[scannum]['wn'],self.scans[scannum]['counts'])
         plt.title("Scan: " + str(scannum))
         if xlim is not None:
             plt.xlim(xlim[0],xlim[1])
+        return fig
             
     
     def apply_calib(self):
