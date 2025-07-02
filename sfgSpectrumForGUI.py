@@ -302,7 +302,7 @@ class SFGspectrumForGUI():
             return -a1*np.exp(-(x-xcen1)**2/(2*sigma1**2)) + a2*np.exp(-(x-xcen2)**2/(2*sigma2**2))+off
         
         #initial guesses for the fit                        
-        xcen1 = (range[0]+range[1])/2
+        xcen1 = (fitrange[0]+fitrange[1])/2
         sigma1 = 20
         a1 = self.calibACN['counts'].max()/2
 
