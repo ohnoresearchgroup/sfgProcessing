@@ -14,6 +14,9 @@ from sfgSpectrumForGUI import SFGspectrumForGUI
 
 class ProcessingWindow:
     def __init__(self, spectrum):
+        
+        ## ==== SETUP CODE ======
+        
         #associate the spectrum with the window
         self.spectrum = spectrum
         
@@ -43,13 +46,14 @@ class ProcessingWindow:
         
         # ==== TOP LEFT: PLOT OF ALL SPECTRA ====
         
-        def update_all_plot():        
-            all_fig = self.spectrum.plot()
-            
-            #if 
+        def update_all_plot():
+            #clear canvas if one already exists
+            #should update to delete figure
             if self.canvas_allplot is not None:
                 self.canvas_allplot.get_tk_widget().destroy()
-        
+                
+            all_fig = self.spectrum.plot()
+            
             # Embed the plot into the Tkinter window
             self.canvas_allplot = FigureCanvasTkAgg(all_fig, master=panels[0][0])
             self.canvas_allplot.draw()
@@ -69,12 +73,20 @@ class ProcessingWindow:
         tk.Label(entry_frame, text="Lower Limit:").grid(row=0, column=0, padx=2)
         x1_entry = tk.Entry(entry_frame, width=6)
         x1_entry.grid(row=0, column=1, padx=2)
-        x1_entry.insert(0, "2820")  # Default value for X Max
+
         
         tk.Label(entry_frame, text="Upper Limit:").grid(row=0, column=2, padx=2)
         x2_entry = tk.Entry(entry_frame, width=6)
         x2_entry.grid(row=0, column=3, padx=2)
-        x2_entry.insert(0, "2860")  # Default value for X Max
+        
+        #set default values
+        if self.spectrum.region == 'CH':
+            x1_entry.insert(0, "2820")  # Default value for lower lim
+            x2_entry.insert(0, "2860")  # Default value for upper lim
+        elif self.spectrum.region == 'CN':
+            x1_entry.insert(0,"2200")
+            x2_entry.inser(0,"2300")
+            
         
         # Read-only Entry
         tk.Label(entry_frame, text="Shift:").grid(row=1, column=0, padx=2)
@@ -121,15 +133,14 @@ class ProcessingWindow:
             update_one_plot()
             return
         
-        # Buttons
+        # Buttons for performing fit and applying the calibration
         button_frame = tk.Frame(top_right_inner)
-        button_frame.pack(pady=5)
-        
-        tk.Button(button_frame, text="Update Fit", command=update_calib_plot).pack(side=tk.LEFT, padx=5)
+        button_frame.pack(pady=5)       
+        tk.Button(button_frame, text="Perform Fit", command=update_calib_plot).pack(side=tk.LEFT, padx=5)
         tk.Button(button_frame, text="Apply Calib", bg="yellow", command=apply_calibration).pack(side=tk.LEFT, padx=5)
         
         update_all_plot()
-        update_calib_plot()
+        #update_calib_plot()
 
         # === LOWER LEFT ====
         def on_int_dropdown(event):
@@ -158,12 +169,21 @@ class ProcessingWindow:
         tk.Label(ll_entry_frame, text="Lower Limit:").grid(row=0, column=1, padx=2)
         one_x1_entry = tk.Entry(ll_entry_frame, width=6)
         one_x1_entry.grid(row=0, column=2, padx=2)
-        one_x1_entry.insert(0, "2600")  # Default value for X Max
+
         
         tk.Label(ll_entry_frame, text="Upper Limit:").grid(row=0, column=3, padx=2)
         one_x2_entry = tk.Entry(ll_entry_frame, width=6)
         one_x2_entry.grid(row=0, column=4, padx=2)
-        one_x2_entry.insert(0, "3200")  # Default value for X Max
+
+        
+        #default plot limits for one plot
+        if self.spectrum.region == 'CH':
+            one_x1_entry.insert(0, "2700")  # Default value for lower x
+            one_x2_entry.insert(0, "3100")  # Default value for upper x
+        if self.spectrum.region =='CN':
+            one_x1_entry.insert(0, "2000")  # Default value for lower x
+            one_x2_entry.insert(0, "2300")  # Default value for upper x
+            
         
             
         def update_one_plot():
@@ -181,8 +201,6 @@ class ProcessingWindow:
             self.canvas_oneplot = FigureCanvasTkAgg(one_fig, master=lower_left_inner)
             self.canvas_oneplot.draw()
             self.canvas_oneplot.get_tk_widget().pack(fill=tk.BOTH, expand=True)
-        
-        
 
         
         update_one_plot()

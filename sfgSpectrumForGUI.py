@@ -95,7 +95,7 @@ class SFGspectrumForGUI():
         return df_combined
         
 
-            
+    #plots all the SFG spectra for this sample      
     def plot(self):
         fig = plt.figure()
         for scan in self.scans:
@@ -103,7 +103,8 @@ class SFGspectrumForGUI():
             
         plt.title('BG corrected scans')
         return fig
-            
+         
+    #plots one identified spectra
     def plotScan(self,scannum,xlim=None):
         fig = plt.figure()
         plt.plot(self.scans[scannum]['wn'],self.scans[scannum]['counts'])
@@ -113,13 +114,14 @@ class SFGspectrumForGUI():
         return fig
             
     
+    #adjusts the x-axis following the calibrated shift
     def apply_calib(self):
         for i, scan in enumerate(self.scans):
             self.scans[i]['wn'] = self.scans_uncorr[i]['wn'] - self.shift
         print('Calibration applied.')
         return
         
-            
+    #do the fit to calculate the shift        
     def fit_calib(self,fitrange):
         if self.region == 'CH':
             fig = self.fit_calibPS(fitrange)
