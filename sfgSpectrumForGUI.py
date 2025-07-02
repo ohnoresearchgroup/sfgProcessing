@@ -11,23 +11,26 @@ import copy
 from scipy.interpolate import interp1d
 
 class SFGspectrumForGUI():
-    def __init__(self,path,region,name,filesSFG,filesBG,filesCalib,skip=None):
-
+    def __init__(self,path,region,name,filesSFG,filesBG,filesCalib):
+        
+        #path to folder
         self.path = path
+        
+        #region of spectra: CH, CN, etc.
         self.region = region
+        
+        #unique sample name
         self.name = name
+        
+        #variable to store calibration offset
         self.shift = 0
         
+        #lists of the sorted sample files, bg files, and calibration files
         self.filesSFG = filesSFG
         self.filesBG = filesBG
         self.filesCalib = filesCalib
         
-        #skip files of names given to skip
-        if skip is not None:
-            for skipfile in skip:
-                self.filesSFG = [f for f in self.filesSFG if skipfile not in f]    
-        
-        #import background spectra
+        #import background spectrum
         if self.filesBG[0] is not None:
             for file in self.filesBG:
                 if ('calib' not in file):
@@ -59,6 +62,8 @@ class SFGspectrumForGUI():
             scan['raw'] = scan['counts']
             scan['counts'] = scan['counts'] - self.bg['counts']
             self.scans.append(scan)
+            
+        
             
         #store number of scans
         self.num_scans = len(self.scans)
@@ -131,7 +136,7 @@ class SFGspectrumForGUI():
             print("No calibration code for that region")
         return fig
         
-    def fit_calibPS(self,fitrange,num=0,second = None):
+    def fit_calibPS(self,fitrange,num=0):
         print("PS calibration files available: ")
         for file in self.filesCalib:
             print(file)
@@ -163,9 +168,7 @@ class SFGspectrumForGUI():
         xShort = np.abs(self.ps['wn'][idx2:idx1+1].values)
         yShort = np.abs(self.ps['counts'][idx2:idx1+1].values)
 
-        #gaussian function to fit the segment
-        def twogauss(x,a1,xcen1,sigma1,a2,xcen2,sigma2,off):
-            return -a1*np.exp(-(x-xcen1)**2/(2*sigma1**2)) + a2*np.exp(-(x-xcen2)**2/(2*sigma2**2))+off
+
         
         #initial guesses for the fit                        
         xcen1 = (fitrange[0]+fitrange[1])/2
@@ -195,68 +198,10 @@ class SFGspectrumForGUI():
         
         #set shift for this peak
         shift = popt[1]-2850.13
-        print('1st shift is ',shift)
-
-        #also calibrate to the second peak    
-        if second is not None:
-                #plt calibration spectra
-            plt.figure()
-            plt.plot(self.ps['wn'],self.ps['counts'])
-            plt.xlim([2900,3100])
-            plt.title('PS Spectrum 2')
-
-            #indexes for the values entered that bound the peak
-            idx1 = (np.abs(self.ps['wn'] - second[0])).argmin()
-            idx2 = (np.abs(self.ps['wn'] - second[1])).argmin()
-        
-            #segments within bounds
-            xShort = np.abs(self.ps['wn'][idx2:idx1+1].values)
-            yShort = np.abs(self.ps['counts'][idx2:idx1+1].values)
-
-            #initial guesses for the fit                        
-            xcen1 = (second[0]+second[1])/2
-            sigma1 = 20
-            a1 = self.ps['counts'].max()/2
-
-            xcen2 = 3000
-            sigma2 = 200
-            a2 = self.ps['counts'].max()
-            off = 0
-        
-            guesses =[a1,xcen1,sigma1,a2,xcen2,sigma2,off]
-            lw = [0,2700,1,0,2700,10,0]
-            up = [self.ps['counts'].max(),3200,50,self.ps['counts'].max()*2,3200,1000,self.ps['counts'].max()]
-       
-            plt.figure()
-            plt.plot(self.ps['wn'][idx2-5:idx1+5],self.ps['counts'][idx2-5:idx1+5])
-        
-            #fit 
-            popt,pcov = curve_fit(twogauss,xShort,yShort,p0=guesses,bounds = [lw,up],maxfev = 10000)
-        
-            #plot with fit and points
-            plt.plot(xShort,twogauss(xShort,*popt),'ro:',label='fit')
-            plt.plot(self.ps['wn'][idx2],self.ps['counts'][idx2],'o',markersize=5)
-            plt.plot(self.ps['wn'][idx1],self.ps['counts'][idx1],'o',markersize=5)
-            plt.title('2nd Fitted PS Calibration')
-
-            #set shift for this peak
-            shift2 = popt[1]-3001.40
-            print('2nd shift is ',shift2)
-
-            totalshift = (shift+shift2)/2
-            print("Total shift is ", totalshift)
-            self.shift = totalshift
-                
-            print('Double PS calibration applied.')
-        else:
-            self.shift = shift
+        print('shift is ',shift)
+        self.shift = shift
         
         return fig
-        
-
-
-        
-
 
     def fit_calibACN(self,fitrange=[2100,2300],initpeak = 2250,shift = None):
         #if hardcoded shift is entered, perform shift and return
@@ -298,10 +243,6 @@ class SFGspectrumForGUI():
         #segments within bounds
         xShort = np.abs(self.calibACN['wn'][idx2:idx1+1].values)
         yShort = np.abs(self.calibACN['counts'][idx2:idx1+1].values)
-
-        #gaussian function to fit the segment
-        def twogauss(x,a1,xcen1,sigma1,a2,xcen2,sigma2,off):
-            return -a1*np.exp(-(x-xcen1)**2/(2*sigma1**2)) + a2*np.exp(-(x-xcen2)**2/(2*sigma2**2))+off
         
         #initial guesses for the fit                        
         xcen1 = (fitrange[0]+fitrange[1])/2
@@ -340,13 +281,6 @@ class SFGspectrumForGUI():
         return fig
 
 
-    def calibCO2(self):
-        return
-
-        
-        
-
-        
     def fitgaussians(self,goldparams=None):
         if goldparams == None:
             if self.stretch == 'CN':
@@ -527,34 +461,14 @@ class SFGspectrumForGUI():
         plt.ylabel('SFG Intensity [a.u.]')
         set_size(3,3)
         plt.tight_layout()
-    
-
-
-
-def calcSFGwl(wl1,wl2):
-        wl = ((wl1**-1) + (wl2**-1))**-1
-        return wl
+        
+#gaussian function to fit calibration spectra
+def twogauss(x,a1,xcen1,sigma1,a2,xcen2,sigma2,off):
+    return -a1*np.exp(-(x-xcen1)**2/(2*sigma1**2)) + a2*np.exp(-(x-xcen2)**2/(2*sigma2**2))+off
 
 def convert_SFG_to_IRwn(SFG,vis):
     IR = 1e7/((SFG**-1) - (vis**-1))**-1
     return IR
-
-def modified_z_score(intensity):
-        median_int= np.median(intensity)
-        mad_int = np.median([np.abs(intensity - median_int)])
-        modified_z_scores = 0.6745 * (intensity - median_int) / mad_int
-        return modified_z_scores
-
-def removeCR(y,width, thresh):
-        spikes = abs(np.array(modified_z_score(np.diff(y)))) > thresh
-        y_out = y.copy() # So we don’t overwrite y
-        for i in np.arange(len(spikes)):
-            if spikes[i] != 0: # If we have an spike in position i
-                w = np.arange(i-width,i+1+width) # we select 2 m + 1 points around our spike
-                w2 = w[spikes[w] == 0] # From such interval, we choose the ones which are not spikes
-                y_out[i] = np.mean(y[w2]) # and we average their values
-        return y_out
-
     
 def set_size(w,h, ax=None):
     """ w, h: width, height in inches """

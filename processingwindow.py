@@ -136,11 +136,11 @@ class ProcessingWindow:
         # Buttons for performing fit and applying the calibration
         button_frame = tk.Frame(top_right_inner)
         button_frame.pack(pady=5)       
-        tk.Button(button_frame, text="Perform Fit", command=update_calib_plot).pack(side=tk.LEFT, padx=5)
+        tk.Button(button_frame, text="Update Fit", command=update_calib_plot).pack(side=tk.LEFT, padx=5)
         tk.Button(button_frame, text="Apply Calib", bg="yellow", command=apply_calibration).pack(side=tk.LEFT, padx=5)
         
         update_all_plot()
-        #update_calib_plot()
+        update_calib_plot()
 
         # === LOWER LEFT ====
         def on_int_dropdown(event):
