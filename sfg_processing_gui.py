@@ -100,7 +100,7 @@ class FolderOrganizerApp:
         if region == "CH":
             sfg_files = [file for file in all_sample_files if ((file.split('_')[-2] == 'CH') and ('bg' not in file))]
             bg_files = [file for file in all_sample_files if ((file.split('_')[-2] == 'CH') and ('bg' in file))]
-            calib_files = [file for file in all_sample_files if ('_pp_' in file) or ('_ps_' in file)]
+            calib_files = [file for file in all_sample_files if ((('_pp_' in file) or ('_ps_' in file)) and ('bg' not in file))]
         elif region == 'CN':
             sfg_files = [file for file in all_sample_files if ((file.split('_')[-2] == 'CN') and ('bg' not in file) and ('4450' not in file) and ('calib' not in file))]
             bg_files = [file for file in all_sample_files if ((file.split('_')[-2] == 'CN') and ('bg' in file))]

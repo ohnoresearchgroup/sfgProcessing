@@ -34,11 +34,10 @@ class SFGspectrumForGUI():
         if self.filesBG[0] is not None:
             for file in self.filesBG:
                 if ('calib' not in file):
+                    fullpath = os.path.join(path,file)
                     if file.endswith(".asc"):
-                        fullpath = os.path.join(path,file)
                         self.bg = self.importAndor(fullpath)
                     elif file.endswith(".csv"):
-                        fullpath = os.path.join(path,file)
                         self.bg = self.importPI(fullpath)
                     else:
                         print('not correct file type.')
@@ -50,11 +49,10 @@ class SFGspectrumForGUI():
         #import SFG spectra
         self.scans = []
         for file in self.filesSFG:
-            if file.endswith(".asc"):
-                fullpath = os.path.join(path,file)
+            fullpath = os.path.join(path,file)
+            if file.endswith(".asc"):              
                 scan = self.importAndor(fullpath)
             elif file.endswith(".csv"):
-                fullpath = os.path.join(path,file)
                 scan = self.importPI(fullpath)
             else:
                 print('not correct file type.')
@@ -63,42 +61,26 @@ class SFGspectrumForGUI():
             scan['counts'] = scan['counts'] - self.bg['counts']
             self.scans.append(scan)
             
-        
-            
+
+        #import calibration spectra
+        self.calib_scans = []
+        for file in self.filesCalib:
+            fullpath = os.path.join(self.path, file)
+            if file.endswith(".asc"):          
+                calibscan = self.importAndor(fullpath)
+            elif file.endswith(".csv"):
+                calibscan = self.importPI(fullpath)
+            else:
+                print('not correct file type.')
+            calibscan['wn'] = convert_SFG_to_IRwn(self.ps['wl'],1034)
+        self.calib_scans.append(calibscan)
+  
         #store number of scans
         self.num_scans = len(self.scans)
             
         #create a deep copy that holds uncalibrated wavenumbers    
         self.scans_uncorr = copy.deepcopy(self.scans)
-            
-    def importAndor(self,name):
-        df = pd.read_csv(name, delimiter='\t', names=['wl', 'counts'], skiprows=37, engine='python')
-        return df
-    
-    def importPI(self,name):        
-        df = pd.read_csv(name)
-        numFrames = df['Frame'].max()
-        counts = np.zeros(1340)
-        ind_dfs = []
-        for i in range(numFrames):
-            filtered_df = df[df['Frame'] == i + 1]
-            filtered_df = filtered_df.reset_index(drop=True)
-            #add up intensity from individual frames
-            counts = counts + filtered_df['Intensity'].values
-            
-            #rename column for intensity of individual frame
-            newname = 'Frame' + str(i+1)
-            filtered_df.rename(columns={'Intensity': newname }, inplace=True)
-            ind_dfs.append(filtered_df)
-        
-        #combine each dataframe, dropping duplicate columns
-        df_combined = pd.concat(ind_dfs, axis=1).loc[:, ~pd.concat(ind_dfs, axis=1).columns.duplicated()]
-        df_combined['counts'] = counts
-        df_combined.drop(['ROI','Frame','Row','Column'], axis = 1, inplace = True)
-        df_combined.rename(columns={'Wavelength': 'wl'}, inplace=True)
-        
-        return df_combined
-        
+
 
     #plots all the SFG spectra for this sample      
     def plot(self):
@@ -137,63 +119,46 @@ class SFGspectrumForGUI():
         return fig
         
     def fit_calibPS(self,fitrange,num=0):
+        #right now just does first ps spectrum available but future code could allow selection
         print("PS calibration files available: ")
         for file in self.filesCalib:
             print(file)
-
-        print("PS calibration with file ",num," chosen.")
-
-        #import calibration spectra
-        file = self.filesCalib[num]
-        fullpath = os.path.join(self.path, file)
-        if file.endswith(".asc"):
-            self.ps = self.importAndor(fullpath)
-        elif file.endswith(".csv"):
-            self.ps = self.importPI(fullpath)
-        else:
-            print('not correct file type.')
-        self.ps['wn'] = convert_SFG_to_IRwn(self.ps['wl'],1034)
-
-        #plt calibration spectra
-        plt.figure()
-        plt.plot(self.ps['wn'],self.ps['counts'])
-        plt.xlim([2700,3000])
-        plt.title('PS Spectrum')
+        print("PS calibration file ", num, " chosen.")
+        
+        self.calib_spectrum = self.calib_scans[num]
     
         #indexes for the values entered that bound the peak
-        idx1 = (np.abs(self.ps['wn'] - fitrange[0])).argmin()
-        idx2 = (np.abs(self.ps['wn'] - fitrange[1])).argmin()
+        idx1 = (np.abs(self.calib_spectrum['wn'] - fitrange[0])).argmin()
+        idx2 = (np.abs(self.calib_spectrum['wn'] - fitrange[1])).argmin()
         
         #segments within bounds
-        xShort = np.abs(self.ps['wn'][idx2:idx1+1].values)
-        yShort = np.abs(self.ps['counts'][idx2:idx1+1].values)
-
-
+        xShort = np.abs(self.calib_spectrum['wn'][idx2:idx1+1].values)
+        yShort = np.abs(self.calib_spectrum['counts'][idx2:idx1+1].values)
         
         #initial guesses for the fit                        
         xcen1 = (fitrange[0]+fitrange[1])/2
         sigma1 = 20
-        a1 = self.ps['counts'].max()/2
+        a1 = self.calib_spectrum['counts'].max()/2
 
         xcen2 = 2900
         sigma2 = 200
-        a2 = self.ps['counts'].max()
+        a2 = self.calib_spectrum['counts'].max()
         off = 0
         
         guesses =[a1,xcen1,sigma1,a2,xcen2,sigma2,off]
         lw = [0,2700,1,0,2700,10,0]
-        up = [self.ps['counts'].max(),3000,50,self.ps['counts'].max()*2,3100,1000,self.ps['counts'].max()]
+        up = [self.calib_spectrum['counts'].max(),3000,50,self.calib_spectrum['counts'].max()*2,3100,1000,self.calib_spectrum['counts'].max()]
        
         fig = plt.figure()
-        plt.plot(self.ps['wn'][idx2-5:idx1+5],self.ps['counts'][idx2-5:idx1+5])
+        plt.plot(self.calib_spectrum['wn'][idx2-5:idx1+5],self.calib_spectrum['counts'][idx2-5:idx1+5])
         
         #fit 
         popt,pcov = curve_fit(twogauss,xShort,yShort,p0=guesses,bounds = [lw,up],maxfev = 10000)
         
         #plot with fit and points
         plt.plot(xShort,twogauss(xShort,*popt),'ro:',label='fit')
-        plt.plot(self.ps['wn'][idx2],self.ps['counts'][idx2],'o',markersize=5)
-        plt.plot(self.ps['wn'][idx1],self.ps['counts'][idx1],'o',markersize=5)
+        plt.plot(self.calib_spectrum['wn'][idx2],self.calib_spectrum['counts'][idx2],'o',markersize=5)
+        plt.plot(self.calib_spectrum['wn'][idx1],self.calib_spectrum['counts'][idx1],'o',markersize=5)
         plt.title('Fitted PS Calibration')
         
         #set shift for this peak
@@ -203,71 +168,45 @@ class SFGspectrumForGUI():
         
         return fig
 
-    def fit_calibACN(self,fitrange=[2100,2300],initpeak = 2250,shift = None):
-        #if hardcoded shift is entered, perform shift and return
-        if shift is not None:
-            print('Entered shift is ',shift)
-            for scan in self.scans:
-                scan['wn'] = scan['wn'] - shift
-            print('Entered ACN Calibration applied.')
-            return
-            
+    def fit_calibACN(self,fitrange):
+        #reference peak value
         self.acnpeakvalue = 2253.6
-
         
-        print('ACN calibration file:')
-        self.calibACNfile = [file for file in self.filesCalib if ('bg' not in file) and ('calib' in file)][0]
-        print(self.calibACNfile)
-        
-        fullpath = os.path.join(self.path,self.calibACNfile)
-        if self.calibACNfile.endswith(".asc"):
-            self.calibACN = self.importAndor(fullpath)
-        elif self.calibACNfile.endswith(".csv"):
-            self.calibACN = self.importPI(fullpath)
-        else:
-            print('not correct file type.')
-
-        self.calibACN['wn'] = convert_SFG_to_IRwn(self.calibACN['wl'],1034)
-
-
-        #plt calibration spectra
-        plt.figure()
-        plt.plot(self.calibACN['wn'],self.calibACN['counts'])
-        plt.xlim([2100,2350])
-        plt.title('ACN Calibration')
+        #takes first calibration spectrum
+        self.calib_spectrum = self.calib_scans[0]
 
         #indexes for the values entered that bound the peak
-        idx1 = (np.abs(self.calibACN['wn'] - fitrange[0])).argmin()
-        idx2 = (np.abs(self.calibACN['wn'] - fitrange[1])).argmin()
+        idx1 = (np.abs(self.calib_spectrum['wn'] - fitrange[0])).argmin()
+        idx2 = (np.abs(self.calib_spectrum['wn'] - fitrange[1])).argmin()
         
         #segments within bounds
-        xShort = np.abs(self.calibACN['wn'][idx2:idx1+1].values)
-        yShort = np.abs(self.calibACN['counts'][idx2:idx1+1].values)
+        xShort = np.abs(self.calib_spectrum['wn'][idx2:idx1+1].values)
+        yShort = np.abs(self.calib_spectrum['counts'][idx2:idx1+1].values)
         
         #initial guesses for the fit                        
         xcen1 = (fitrange[0]+fitrange[1])/2
         sigma1 = 20
-        a1 = self.calibACN['counts'].max()/2
+        a1 = self.calib_spectrum['counts'].max()/2
 
-        xcen2 = initpeak
+        xcen2 = 2250
         sigma2 = 20
-        a2 = self.calibACN['counts'].max()
+        a2 = self.calib_spectrum['counts'].max()
         off = 0
         
         guesses =[a1,xcen1,sigma1,a2,xcen2,sigma2,off]
         lw = [0,2100,1,0,2100,1,0]
-        up = [self.calibACN['counts'].max(),2300,1000,self.calibACN['counts'].max()*2,2300,1000,self.calibACN['counts'].max()]
+        up = [self.calib_spectrum['counts'].max(),2300,1000,self.calib_spectrum['counts'].max()*2,2300,1000,self.calib_spectrum['counts'].max()]
        
         fig = plt.figure()
-        plt.plot(self.calibACN['wn'][idx2-5:idx1+5],self.calibACN['counts'][idx2-5:idx1+5])
+        plt.plot(self.calib_spectrum['wn'][idx2-5:idx1+5],self.calib_spectrum['counts'][idx2-5:idx1+5])
         
         #fit 
         popt,pcov = curve_fit(twogauss,xShort,yShort,p0=guesses,bounds = [lw,up],maxfev = 10000)
         
         #plot with fit and points
         plt.plot(xShort,twogauss(xShort,*popt),'ro:',label='fit')
-        plt.plot(self.calibACN['wn'][idx2],self.calibACN['counts'][idx2],'o',markersize=5)
-        plt.plot(self.calibACN['wn'][idx1],self.calibACN['counts'][idx1],'o',markersize=5)
+        plt.plot(self.calib_spectrum['wn'][idx2],self.calib_spectrum['counts'][idx2],'o',markersize=5)
+        plt.plot(self.calib_spectrum['wn'][idx1],self.calib_spectrum['counts'][idx1],'o',markersize=5)
         plt.title('Fitted ANC Calibration')
         
         #set shift for this peak
@@ -480,3 +419,33 @@ def set_size(w,h, ax=None):
     figw = float(w)/(r-l)
     figh = float(h)/(t-b)
     ax.figure.set_size_inches(figw, figh)
+    
+    
+    
+def importAndor(self,name):
+    df = pd.read_csv(name, delimiter='\t', names=['wl', 'counts'], skiprows=37, engine='python')
+    return df
+    
+def importPI(self,name):        
+    df = pd.read_csv(name)
+    numFrames = df['Frame'].max()
+    counts = np.zeros(1340)
+    ind_dfs = []
+    for i in range(numFrames):
+        filtered_df = df[df['Frame'] == i + 1]
+        filtered_df = filtered_df.reset_index(drop=True)
+        #add up intensity from individual frames
+        counts = counts + filtered_df['Intensity'].values
+            
+        #rename column for intensity of individual frame
+        newname = 'Frame' + str(i+1)
+        filtered_df.rename(columns={'Intensity': newname }, inplace=True)
+        ind_dfs.append(filtered_df)
+        
+    #combine each dataframe, dropping duplicate columns
+    df_combined = pd.concat(ind_dfs, axis=1).loc[:, ~pd.concat(ind_dfs, axis=1).columns.duplicated()]
+    df_combined['counts'] = counts
+    df_combined.drop(['ROI','Frame','Row','Column'], axis = 1, inplace = True)
+    df_combined.rename(columns={'Wavelength': 'wl'}, inplace=True)
+        
+    return df_combined
