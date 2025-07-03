@@ -1,8 +1,6 @@
 import os
 import tkinter as tk
-from tkinter import filedialog, ttk, Toplevel, Label
-import matplotlib.pyplot as plt
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from tkinter import ttk
 from sfgSpectrumForGUI import SFGspectrumForGUI
 from processingwindow import ProcessingWindow
 
@@ -70,7 +68,7 @@ class FolderOrganizerApp:
 
 
     def select_folder(self):
-        folder_path = filedialog.askdirectory()
+        folder_path = tk.filedialog.askdirectory()
         self.path = folder_path
         print(folder_path)
         if folder_path:

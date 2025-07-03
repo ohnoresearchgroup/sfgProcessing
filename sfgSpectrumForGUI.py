@@ -1,14 +1,9 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
-import matplotlib.pyplot as plt
-from scipy.signal import find_peaks, peak_widths
-from scipy.signal import savgol_filter
 from scipy.optimize import curve_fit
-from scipy import exp
 import os
 import copy
-from scipy.interpolate import interp1d
 
 class SFGspectrumForGUI():
     def __init__(self,path,region,name,filesSFG,filesBG,filesCalib):
@@ -73,6 +68,7 @@ class SFGspectrumForGUI():
             plt.plot(scan['wn'],scan['counts'])
             
         plt.title('BG corrected scans')
+        fig.tight_layout() 
         return fig
          
     #plots one identified spectra
@@ -82,6 +78,7 @@ class SFGspectrumForGUI():
         plt.title("Scan: " + str(scannum))
         if xlim is not None:
             plt.xlim(xlim[0],xlim[1])
+        fig.tight_layout() 
         return fig
             
     
@@ -144,6 +141,7 @@ class SFGspectrumForGUI():
         plt.plot(self.calib_spectrum['wn'][idx2],self.calib_spectrum['counts'][idx2],'o',markersize=5)
         plt.plot(self.calib_spectrum['wn'][idx1],self.calib_spectrum['counts'][idx1],'o',markersize=5)
         plt.title('Fitted PS Calibration')
+        fig.tight_layout() 
         
         #set shift for this peak
         shift = popt[1]-2850.13
@@ -192,6 +190,7 @@ class SFGspectrumForGUI():
         plt.plot(self.calib_spectrum['wn'][idx2],self.calib_spectrum['counts'][idx2],'o',markersize=5)
         plt.plot(self.calib_spectrum['wn'][idx1],self.calib_spectrum['counts'][idx1],'o',markersize=5)
         plt.title('Fitted ANC Calibration')
+        fig.tight_layout() 
         
         #set shift for this peak
         shift = popt[1]- self.acnpeakvalue
@@ -241,6 +240,7 @@ class SFGspectrumForGUI():
             plt.xlim([2700, 3150])
         if self.region == 'CN':
             plt.xlim([2000, 2350])
+        fig_fg.tight_layout() 
 
 
         fig_sum = plt.figure()
@@ -260,6 +260,7 @@ class SFGspectrumForGUI():
         plt.title(self.name)
         plt.xlabel('Wavenumber [cm$^{-1}$]')
         plt.ylabel('SFG Intensity [a.u.]')
+        fig_sum.tight_layout() 
         
         #return the two figures
         return (fig_fg, fig_sum)
