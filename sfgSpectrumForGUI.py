@@ -4,6 +4,17 @@ import numpy as np
 from scipy.optimize import curve_fit
 import os
 import copy
+from matplotlib.figure import Figure
+import matplotlib as mpl
+
+# Set global font size BEFORE creating the figure
+mpl.rcParams.update({
+    'font.size': 7,         # Global font size
+    'font.family': 'Arial',  # Optional: set font family
+})
+
+#dimension of figures
+fig_dim = 2.25
 
 class SFGspectrumForGUI():
     def __init__(self,path,region,name,filesSFG,filesBG,filesCalib):
@@ -63,21 +74,27 @@ class SFGspectrumForGUI():
 
     #plots all the SFG spectra for this sample      
     def plot(self):
-        fig = plt.figure()
+        fig = Figure(figsize=(fig_dim,fig_dim))
+        ax = fig.add_subplot(111)
         for scan in self.scans:
-            plt.plot(scan['wn'],scan['counts'])
+            ax.plot(scan['wn'],scan['counts'])
             
-        plt.title('BG corrected scans')
+        ax.set_title('BG corrected scans')
+        ax.set_xlabel('Wavenumber [cm$^{-1}$]')
+        ax.set_ylabel('SFG Intensity [counts]')
         fig.tight_layout() 
         return fig
          
     #plots one identified spectra
     def plotScan(self,scannum,xlim=None):
-        fig = plt.figure()
-        plt.plot(self.scans[scannum]['wn'],self.scans[scannum]['counts'])
-        plt.title("Scan: " + str(scannum))
+        fig = Figure(figsize=(fig_dim,fig_dim))
+        ax = fig.add_subplot(111)
+        ax.plot(self.scans[scannum]['wn'],self.scans[scannum]['counts'])
+        ax.set_title("Scan: " + str(scannum))
         if xlim is not None:
-            plt.xlim(xlim[0],xlim[1])
+            ax.set_xlim(xlim[0],xlim[1])
+        ax.set_xlabel('Wavenumber [cm$^{-1}$]')
+        ax.set_ylabel('SFG Intensity [counts]')
         fig.tight_layout() 
         return fig
             
@@ -130,17 +147,20 @@ class SFGspectrumForGUI():
         lw = [0,2700,1,0,2700,10,0]
         up = [self.calib_spectrum['counts'].max(),3000,50,self.calib_spectrum['counts'].max()*2,3100,1000,self.calib_spectrum['counts'].max()]
        
-        fig = plt.figure()
-        plt.plot(self.calib_spectrum['wn'][idx2-5:idx1+5],self.calib_spectrum['counts'][idx2-5:idx1+5])
+        fig = Figure(figsize=(fig_dim,fig_dim))
+        ax = fig.add_subplot(111)
+        ax.plot(self.calib_spectrum['wn'][idx2-5:idx1+5],self.calib_spectrum['counts'][idx2-5:idx1+5])
         
         #fit 
         popt,pcov = curve_fit(twogauss,xShort,yShort,p0=guesses,bounds = [lw,up],maxfev = 10000)
         
         #plot with fit and points
-        plt.plot(xShort,twogauss(xShort,*popt),'ro:',label='fit')
-        plt.plot(self.calib_spectrum['wn'][idx2],self.calib_spectrum['counts'][idx2],'o',markersize=5)
-        plt.plot(self.calib_spectrum['wn'][idx1],self.calib_spectrum['counts'][idx1],'o',markersize=5)
-        plt.title('Fitted PS Calibration')
+        ax.plot(xShort,twogauss(xShort,*popt),'ro:',label='fit',markersize=3)
+        ax.plot(self.calib_spectrum['wn'][idx2],self.calib_spectrum['counts'][idx2],'o',markersize=3)
+        ax.plot(self.calib_spectrum['wn'][idx1],self.calib_spectrum['counts'][idx1],'o',markersize=3)
+        ax.set_title('Fitted PS Calibration')
+        ax.set_xlabel('Wavenumber [cm$^{-1}$]')
+        ax.set_ylabel('SFG Intensity [a.u.]')
         fig.tight_layout() 
         
         #set shift for this peak
@@ -179,17 +199,20 @@ class SFGspectrumForGUI():
         lw = [0,2100,1,0,2100,1,0]
         up = [self.calib_spectrum['counts'].max(),2300,1000,self.calib_spectrum['counts'].max()*2,2300,1000,self.calib_spectrum['counts'].max()]
        
-        fig = plt.figure()
-        plt.plot(self.calib_spectrum['wn'][idx2-5:idx1+5],self.calib_spectrum['counts'][idx2-5:idx1+5])
+        fig = Figure(figsize=(fig_dim,fig_dim))
+        ax = fig.add_subplot(111)
+        ax.plot(self.calib_spectrum['wn'][idx2-5:idx1+5],self.calib_spectrum['counts'][idx2-5:idx1+5])
         
         #fit 
         popt,pcov = curve_fit(twogauss,xShort,yShort,p0=guesses,bounds = [lw,up],maxfev = 10000)
         
         #plot with fit and points
-        plt.plot(xShort,twogauss(xShort,*popt),'ro:',label='fit')
-        plt.plot(self.calib_spectrum['wn'][idx2],self.calib_spectrum['counts'][idx2],'o',markersize=5)
-        plt.plot(self.calib_spectrum['wn'][idx1],self.calib_spectrum['counts'][idx1],'o',markersize=5)
-        plt.title('Fitted ANC Calibration')
+        ax.plot(xShort,twogauss(xShort,*popt),'ro:',label='fit')
+        ax.plot(self.calib_spectrum['wn'][idx2],self.calib_spectrum['counts'][idx2],'o',markersize=5)
+        ax.plot(self.calib_spectrum['wn'][idx1],self.calib_spectrum['counts'][idx1],'o',markersize=5)
+        ax.set_title('Fitted ANC Calibration')
+        ax.set_xlabel('Wavenumber [cm$^{-1}$]')
+        ax.set_ylabel('SFG Intensity [a.u.]')
         fig.tight_layout() 
         
         #set shift for this peak
@@ -222,44 +245,44 @@ class SFGspectrumForGUI():
         self.sumdata = 0
         self.sumfits = 0
         
-        fig_fg = plt.figure()
+        fig_fg = Figure(figsize=(fig_dim,fig_dim))
+        ax = fig_fg.add_subplot(111)
         for scan in self.scans:
             xdata = scan['wn']
             ydata = scan['counts']
             popt, pcov = curve_fit(gaussianGold, xdata, ydata, p0=guesses,bounds = [lw,up], maxfev = 10000)
-            plt.plot(xdata,gaussianGold(xdata,popt[0],popt[1],popt[2])/popt[0])
-            plt.plot(xdata,ydata/popt[0])
+            ax.plot(xdata,gaussianGold(xdata,popt[0],popt[1],popt[2])/popt[0])
+            ax.plot(xdata,ydata/popt[0])
             self.sumdata = self.sumdata + ydata/popt[0]
             self.sumfits = self.sumfits + gaussianGold(xdata,popt[0],popt[1],popt[2])/popt[0]
             #print(popt)
-        ax = plt.gca()
         ax.set_facecolor('white')
-        plt.ylabel('SFG Intensity [counts]')
-        plt.xlabel('Wavenumber [cm^-1]')
+        ax.set_xlabel('Wavenumber [cm$^{-1}$]')
+        ax.set_ylabel('SFG Intensity [a.u.]')
         if self.region == 'CH':
-            plt.xlim([2700, 3150])
+            ax.set_xlim([2700, 3150])
         if self.region == 'CN':
-            plt.xlim([2000, 2350])
+            ax.set_xlim([2000, 2350])
         fig_fg.tight_layout() 
 
 
-        fig_sum = plt.figure()
-        plt.plot(xdata,self.sumdata/self.sumfits)
+        fig_sum = Figure(figsize=(fig_dim,fig_dim))
+        ax = fig_sum.add_subplot(111)
+        ax.plot(xdata,self.sumdata/self.sumfits)
         
         self.gaussiannorm = self.sumdata/self.sumfits
         
         if self.region == 'CH':
-            plt.xlim([2750, 3050])
+            ax.set_xlim([2750, 3050])
         if self.region == 'CN':
-            plt.xlim([2100, 2250])
-        plt.ylim([0, 2])
-        ax=plt.gca()
+            ax.set_xlim([2100, 2250])
+        ax.set_ylim([0, 2])
         x0,x1 = ax.get_xlim()
         y0,y1 = ax.get_ylim()
         ax.set_aspect(abs(x1-x0)/abs(y1-y0))
-        plt.title(self.name)
-        plt.xlabel('Wavenumber [cm$^{-1}$]')
-        plt.ylabel('SFG Intensity [a.u.]')
+        ax.set_title(self.name)
+        ax.set_xlabel('Wavenumber [cm$^{-1}$]')
+        ax.set_ylabel('SFG Intensity [a.u.]')
         fig_sum.tight_layout() 
         
         #return the two figures
@@ -333,9 +356,9 @@ class SFGspectrumForGUI():
         x0,x1 = ax.get_xlim()
         y0,y1 = ax.get_ylim()
         ax.set_aspect(abs(x1-x0)/abs(y1-y0))
-        plt.title(self.name)
-        plt.xlabel('Wavenumber [cm$^{-1}$]')
-        plt.ylabel('SFG Intensity [a.u.]')
+        ax.set_title(self.name)
+        ax.set_xlabel('Wavenumber [cm$^{-1}$]')
+        ax.set_ylabel('SFG Intensity [a.u.]')
         plt.tight_layout()
         
         print()

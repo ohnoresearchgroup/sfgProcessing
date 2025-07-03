@@ -11,6 +11,7 @@ from tkinter import ttk
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
+
 class ProcessingWindow:
     def __init__(self, spectrum):
         
@@ -66,7 +67,7 @@ class ProcessingWindow:
             # Embed the plot into the Tkinter window
             self.canvas_allplot = FigureCanvasTkAgg(all_fig, master=panels[0][0])
             self.canvas_allplot.draw()
-            self.canvas_allplot.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+            self.canvas_allplot.get_tk_widget().pack()
             
         update_all_plot()
         
@@ -75,19 +76,25 @@ class ProcessingWindow:
         
         # Create subframe for layout within top-right panel
         top_right_inner = tk.Frame(panels[0][1])
-        top_right_inner.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        top_right_inner.pack(fill=tk.BOTH, expand=True, padx=2, pady=2)
         
         # Entry fields for numeric input
         entry_frame = tk.Frame(top_right_inner)
-        entry_frame.pack(pady=5)
+        entry_frame.pack(pady=2)
         
-        tk.Label(entry_frame, text="Lower Limit:").grid(row=0, column=0, padx=2)
+        tk.Label(entry_frame, text="Low Lim:").grid(row=0, column=0, padx=2)
         x1_entry = tk.Entry(entry_frame, width=6)
         x1_entry.grid(row=0, column=1, padx=2)
     
-        tk.Label(entry_frame, text="Upper Limit:").grid(row=0, column=2, padx=2)
+        tk.Label(entry_frame, text="Up Lim:").grid(row=0, column=2, padx=2)
         x2_entry = tk.Entry(entry_frame, width=6)
         x2_entry.grid(row=0, column=3, padx=2)
+        
+        #read-only entry to display calibration offset
+        tk.Label(entry_frame, text="Offset:").grid(row=0, column=4, padx=2)
+        shift_entry = tk.Entry(entry_frame, width=8, state="readonly")
+        shift_entry.grid(row=0, column = 5, padx=2)
+        shift_entry.insert(0, "0")
         
         #set default values
         if self.spectrum.region == 'CH':
@@ -97,11 +104,7 @@ class ProcessingWindow:
             x1_entry.insert(0,"2200")
             x2_entry.inser(0,"2300")          
         
-        #read-only entry to display calibration offset
-        tk.Label(entry_frame, text="Shift:").grid(row=1, column=0, padx=2)
-        shift_entry = tk.Entry(entry_frame, width=10, state="readonly")
-        shift_entry.grid(row=1, column = 2, padx=2)
-        shift_entry.insert(0, "0")
+
         
         def update_shift_entry(value):
             shift_entry.config(state="normal")     # Enable writing
@@ -129,7 +132,7 @@ class ProcessingWindow:
                 #create calib plot
                 self.canvas_calibplot = FigureCanvasTkAgg(fig_calib, master=top_right_inner)
                 self.canvas_calibplot.draw()
-                self.canvas_calibplot.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+                self.canvas_calibplot.get_tk_widget().pack()
                 
             except ValueError:
                 print("Invalid input — please enter numeric values.")
@@ -211,7 +214,7 @@ class ProcessingWindow:
             # Embed the plot into the Tkinter window
             self.canvas_oneplot = FigureCanvasTkAgg(one_fig, master=lower_left_inner)
             self.canvas_oneplot.draw()
-            self.canvas_oneplot.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+            self.canvas_oneplot.get_tk_widget().pack()
 
         
         update_one_plot()
@@ -234,12 +237,12 @@ class ProcessingWindow:
             # Embed the plot into the Tkinter window
             self.canvas_fitgaussianplot = FigureCanvasTkAgg(fig_fg, master=panels[0][2])
             self.canvas_fitgaussianplot.draw()
-            self.canvas_fitgaussianplot.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+            self.canvas_fitgaussianplot.get_tk_widget().pack()
             
             # Embed the plot into the Tkinter window
             self.canvas_summaryplot = FigureCanvasTkAgg(fig_sum, master=panels[1][2])
             self.canvas_summaryplot.draw()
-            self.canvas_summaryplot.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+            self.canvas_summaryplot.get_tk_widget().pack()
         
         
         update_fitguassian_plots()
@@ -254,14 +257,19 @@ class ProcessingWindow:
         fit_dropdown_label.grid(row=0, column=0, padx=2, pady=2, sticky="w")
         fit_dropdown_var = tk.StringVar(value=0)
         fit_dropdown = tk.OptionMenu(lower_middle_inner, fit_dropdown_var, *range(0, self.spectrum.num_scans))
-        fit_dropdown.grid(row=1, column=0, padx=2, pady=2, sticky="w")
+        fit_dropdown.grid(row=0, column=1, padx=2, pady=2, sticky="w")
+        
+        #dropdown for oscillator number in fit
+        oscnum_dropdown_var = tk.StringVar(value=1)
+        oscnum_dropdown = tk.OptionMenu(lower_middle_inner, oscnum_dropdown_var, *range(1,3))
+        oscnum_dropdown.grid(row=7, column=0, padx=2, pady=2, sticky="w")
 
         # --- Extra Parameters (left column) ---
-        tk.Label(lower_middle_inner, text="Plot Lim").grid(row=2, column=0, padx=2, pady=(5, 2), sticky="w")
+        tk.Label(lower_middle_inner, text="Plot Lim").grid(row=1, column=0, padx=2, pady=(5, 2), sticky="w")
         plotlim_entry1 = tk.Entry(lower_middle_inner, width=8)
-        plotlim_entry1.grid(row=3, column=0, sticky="w", padx=5, pady=2)
+        plotlim_entry1.grid(row=2, column=0, sticky="w", padx=5, pady=2)
         plotlim_entry2 = tk.Entry(lower_middle_inner, width=8)
-        plotlim_entry2.grid(row=4, column=0, sticky="w", padx=5, pady=2)
+        plotlim_entry2.grid(row=3, column=0, sticky="w", padx=5, pady=2)
         
         #default plot limits for fit plot
         if self.spectrum.region == 'CH':
@@ -271,11 +279,11 @@ class ProcessingWindow:
             plotlim_entry1.insert(0, "2000")  # Default value for lower x
             plotlim_entry2.insert(0, "2300")  # Default value for upper x
 
-        tk.Label(lower_middle_inner, text="Fit Lim:").grid(row=5, column=0, padx=2, pady=(5, 2), sticky="w")
+        tk.Label(lower_middle_inner, text="Fit Lim:").grid(row=4, column=0, padx=2, pady=(5, 2), sticky="w")
         fitlim_entry1 = tk.Entry(lower_middle_inner, width=8)
-        fitlim_entry1.grid(row=6, column=0, sticky="w", padx=5, pady=2)
+        fitlim_entry1.grid(row=5, column=0, sticky="w", padx=5, pady=2)
         fitlim_entry2 = tk.Entry(lower_middle_inner, width=8)
-        fitlim_entry2.grid(row=7, column=0, sticky="w", padx=5, pady=2)
+        fitlim_entry2.grid(row=6, column=0, sticky="w", padx=5, pady=2)
         
         #default plot limits for fit plot
         if self.spectrum.region == 'CH':
