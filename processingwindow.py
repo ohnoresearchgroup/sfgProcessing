@@ -7,6 +7,7 @@ Created on Tue Jul  1 16:10:05 2025
 
 
 import tkinter as tk
+from tkinter import ttk
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
@@ -21,11 +22,11 @@ class ProcessingWindow:
         #create the window and label
         self.window = tk.Toplevel()
         self.window.geometry("1200x800")
-        tk.Label(self.window, text=f"{self.spectrum.name}", font=("Arial", 14)).grid(row=0, column=0, pady=10)
+        tk.Label(self.window, text=f"{self.spectrum.name}", font=("Arial", 10)).grid(row=0, column=0, pady=2)
         
         # Create a parent frame to hold 6 panels
         grid_frame = tk.Frame(self.window)
-        grid_frame.grid(row=1, column=0, sticky="nsew", padx=10, pady=10)
+        grid_frame.grid(row=1, column=0, sticky="nsew", padx=2, pady=2)
         
         self.window.rowconfigure(1, weight=1)
         self.window.columnconfigure(0, weight=1)
@@ -47,6 +48,9 @@ class ProcessingWindow:
         self.canvas_oneplot = None
         self.canvas_fitgaussianplot = None
         self.canvas_summaryplot = None
+        
+        #initialize variable for holding the output path
+        self.output_path = None
         
         # ==== TOP LEFT: PLOT OF ALL SPECTRA ====
         
@@ -168,7 +172,7 @@ class ProcessingWindow:
         int_dropdown_var = tk.StringVar(value=str(integer_options[0]))  # default is first
 
         # Create read-only dropdown menu
-        int_dropdown = tk.ttk.Combobox(ll_entry_frame,textvariable=int_dropdown_var,values=[str(i) for i in integer_options],
+        int_dropdown = ttk.Combobox(ll_entry_frame,textvariable=int_dropdown_var,values=[str(i) for i in integer_options],
             state='readonly',width=10,justify='center')
         int_dropdown.grid(row=0, column=0, padx=2)
         #bind function of new plot
@@ -212,16 +216,6 @@ class ProcessingWindow:
         
         update_one_plot()
         
-        
-        # # ==== LOWER MIDDLE ====
-        # lower_middle_inner = tk.Frame(panels[1][1])
-        # lower_middle_inner.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
-        # lm_entry_frame = tk.Frame(lower_middle_inner)
-        # lm_entry_frame.pack(pady=5)
-        # tk.Label(lower_middle_inner, text="Bottom-Middle Panel").pack()
-        
-        
-        
         # ====== UPPER AND LOWER RIGHT ======
         def update_fitguassian_plots():
             
@@ -249,3 +243,111 @@ class ProcessingWindow:
         
         
         update_fitguassian_plots()
+        
+        
+        # ========= LOWER MIDDLE ====================
+        lower_middle_inner = tk.Frame(panels[1][1])
+        lower_middle_inner.pack(padx=10, pady=10)
+
+        #dropdown to select spectrum
+        fit_dropdown_label = tk.Label(lower_middle_inner, text="Spectrum #:")
+        fit_dropdown_label.grid(row=0, column=0, padx=2, pady=2, sticky="w")
+        fit_dropdown_var = tk.StringVar(value=0)
+        fit_dropdown = tk.OptionMenu(lower_middle_inner, fit_dropdown_var, *range(0, self.spectrum.num_scans))
+        fit_dropdown.grid(row=1, column=0, padx=2, pady=2, sticky="w")
+
+        # --- Extra Parameters (left column) ---
+        tk.Label(lower_middle_inner, text="Plot Lim").grid(row=2, column=0, padx=2, pady=(5, 2), sticky="w")
+        plotlim_entry1 = tk.Entry(lower_middle_inner, width=8)
+        plotlim_entry1.grid(row=3, column=0, sticky="w", padx=5, pady=2)
+        plotlim_entry2 = tk.Entry(lower_middle_inner, width=8)
+        plotlim_entry2.grid(row=4, column=0, sticky="w", padx=5, pady=2)
+        
+        #default plot limits for fit plot
+        if self.spectrum.region == 'CH':
+            plotlim_entry1.insert(0, "2700")  # Default value for lower x
+            plotlim_entry2.insert(0, "3100")  # Default value for upper x
+        if self.spectrum.region =='CN':
+            plotlim_entry1.insert(0, "2000")  # Default value for lower x
+            plotlim_entry2.insert(0, "2300")  # Default value for upper x
+
+        tk.Label(lower_middle_inner, text="Fit Lim:").grid(row=5, column=0, padx=2, pady=(5, 2), sticky="w")
+        fitlim_entry1 = tk.Entry(lower_middle_inner, width=8)
+        fitlim_entry1.grid(row=6, column=0, sticky="w", padx=5, pady=2)
+        fitlim_entry2 = tk.Entry(lower_middle_inner, width=8)
+        fitlim_entry2.grid(row=7, column=0, sticky="w", padx=5, pady=2)
+        
+        #default plot limits for fit plot
+        if self.spectrum.region == 'CH':
+            fitlim_entry1.insert(0, "2800")  # Default value for lower x
+            fitlim_entry2.insert(0, "2860")  # Default value for upper x
+        if self.spectrum.region =='CN':
+            fitlim_entry1.insert(0, "2150")  # Default value for lower x
+            fitlim_entry2.insert(0, "2200")  # Default value for upper x
+
+        # --- Submit Button (also in left column) ---
+        def perform_fit():
+            print("Dropdown value:", fit_dropdown_var.get())
+            print("Extra1:", plotlim_entry1.get(), plotlim_entry2.get())
+            print("Extra2:", fitlim_entry1.get(), fitlim_entry2.get())
+            
+            # for i, entry in enumerate(entries):
+            #     val = entry.get()
+            #     print(f"{row_labels[i]}: {val}")
+            #     # Update corresponding read-only entry
+            #     readonly_entries[i].config(state='normal')
+            #     readonly_entries[i].delete(0, tk.END)
+            #     readonly_entries[i].insert(0, f"Echo: {val}")
+            #     readonly_entries[i].config(state='readonly')
+            
+        def output_fit():              
+            print('printing fit.')
+            
+        def output_path():
+            self.output_path = tk.filedialog.askdirectory()
+            output_btn.config(state='normal') 
+            
+
+        fit_btn = tk.Button(lower_middle_inner, bg="yellow", text="Fit", command=perform_fit)
+        fit_btn.grid(row=8, column=0, pady=(5, 5), padx=2, sticky="w")
+        
+        output_folder_btn = tk.Button(lower_middle_inner, text="Out Path", command=output_path)
+        output_folder_btn.grid(row=9, column=0, pady=(5, 5), padx=2, sticky="w")
+        
+        output_btn = tk.Button(lower_middle_inner, text="Print", command=output_fit,state='disabled')
+        output_btn.grid(row=10, column=0, pady=(5, 5), padx=2, sticky="w")
+
+        # --- Column Header Labels ---
+        tk.Label(lower_middle_inner, text="[Lower, Guess, Upper]", font=("Arial", 10, "bold")).grid(row=0, column=2, padx=5, pady=5)
+        tk.Label(lower_middle_inner, text="Output", font=("Arial", 10, "bold")).grid(row=0, column=3, padx=5, pady=5)
+
+        # --- Entry Fields with Row Labels ---
+        row_labels = [
+            'Gold Amp', 'Gold Center', 'Gold Width',
+            'Osc1 Amp', 'Osc1 Center', 'Osc1 Gamma', 'Osc1 Width',
+            'Osc2 Amp', 'Osc2 Center', 'Osc2 Gamma', 'Osc2 Width'
+        ]
+
+        defaults = [
+            "[0, 1, 2]", "[2820, 2880, 2950]", "[10, 100, 1000]",
+            "[0.01, 1.5, 50]", "[2820, 2880, 2950]", "[1, 10, 30]", "[0, 3.1415, 6.2830]",
+            "[0.01, 1.5, 50]", "[2820, 2880, 2950]", "[1, 10, 30]", "[0, 3.1415, 6.2830]"
+        ]
+
+        entries = []
+        readonly_entries = []
+        for i in range(11):
+            # Row label
+            tk.Label(lower_middle_inner, text=row_labels[i]).grid(row=i+1, column=1, padx=1, pady=1, sticky="e")
+
+            # Editable entry
+            entry = tk.Entry(lower_middle_inner, width=20)
+            entry.grid(row=i+1, column=2, padx=1, pady=1)
+            entry.insert(0, defaults[i])
+            entries.append(entry)
+
+            # Read-only entry
+            ro_entry = tk.Entry(lower_middle_inner, width=8, state='readonly', justify='center')
+            ro_entry.grid(row=i+1, column=3, padx=1, pady=1)
+            ro_entry.insert(0, "")
+            readonly_entries.append(ro_entry)        
