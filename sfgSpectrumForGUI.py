@@ -35,13 +35,7 @@ class SFGspectrumForGUI():
             for file in self.filesBG:
                 if ('calib' not in file):
                     fullpath = os.path.join(path,file)
-                    if file.endswith(".asc"):
-                        self.bg = self.importAndor(fullpath)
-                    elif file.endswith(".csv"):
-                        self.bg = self.importPI(fullpath)
-                    else:
-                        print('not correct file type.')
-                    break
+                    self.bg = importSFG(fullpath)
         else:
             print('No background file found')
             return
@@ -50,12 +44,7 @@ class SFGspectrumForGUI():
         self.scans = []
         for file in self.filesSFG:
             fullpath = os.path.join(path,file)
-            if file.endswith(".asc"):              
-                scan = self.importAndor(fullpath)
-            elif file.endswith(".csv"):
-                scan = self.importPI(fullpath)
-            else:
-                print('not correct file type.')
+            scan = importSFG(fullpath)
             scan['wn'] = convert_SFG_to_IRwn(scan['wl'],1034)
             scan['raw'] = scan['counts']
             scan['counts'] = scan['counts'] - self.bg['counts']
@@ -66,14 +55,9 @@ class SFGspectrumForGUI():
         self.calib_scans = []
         for file in self.filesCalib:
             fullpath = os.path.join(self.path, file)
-            if file.endswith(".asc"):          
-                calibscan = self.importAndor(fullpath)
-            elif file.endswith(".csv"):
-                calibscan = self.importPI(fullpath)
-            else:
-                print('not correct file type.')
+            calibscan = importSFG(fullpath)
             calibscan['wn'] = convert_SFG_to_IRwn(self.ps['wl'],1034)
-        self.calib_scans.append(calibscan)
+            self.calib_scans.append(calibscan)
   
         #store number of scans
         self.num_scans = len(self.scans)
@@ -420,7 +404,15 @@ def set_size(w,h, ax=None):
     figh = float(h)/(t-b)
     ax.figure.set_size_inches(figw, figh)
     
-    
+def importSFG(self,name):
+    if name.endswith(".asc"):
+        df = importAndor(name)
+    elif name.endswith(".csv"):
+        df = importPI(name)
+    else:
+        print('not correct file type.')
+        return
+    return df
     
 def importAndor(self,name):
     df = pd.read_csv(name, delimiter='\t', names=['wl', 'counts'], skiprows=37, engine='python')
