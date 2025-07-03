@@ -56,7 +56,7 @@ class SFGspectrumForGUI():
         for file in self.filesCalib:
             fullpath = os.path.join(self.path, file)
             calibscan = importSFG(fullpath)
-            calibscan['wn'] = convert_SFG_to_IRwn(self.ps['wl'],1034)
+            calibscan['wn'] = convert_SFG_to_IRwn(calibscan['wl'],1034)
             self.calib_scans.append(calibscan)
   
         #store number of scans
@@ -404,7 +404,7 @@ def set_size(w,h, ax=None):
     figh = float(h)/(t-b)
     ax.figure.set_size_inches(figw, figh)
     
-def importSFG(self,name):
+def importSFG(name):
     if name.endswith(".asc"):
         df = importAndor(name)
     elif name.endswith(".csv"):
@@ -414,11 +414,11 @@ def importSFG(self,name):
         return
     return df
     
-def importAndor(self,name):
+def importAndor(name):
     df = pd.read_csv(name, delimiter='\t', names=['wl', 'counts'], skiprows=37, engine='python')
     return df
     
-def importPI(self,name):        
+def importPI(name):        
     df = pd.read_csv(name)
     numFrames = df['Frame'].max()
     counts = np.zeros(1340)
