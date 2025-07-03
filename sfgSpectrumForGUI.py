@@ -206,9 +206,9 @@ class SFGspectrumForGUI():
 
     def fitgaussians(self,goldparams=None):
         if goldparams == None:
-            if self.stretch == 'CN':
+            if self.region == 'CN':
                 goldparams = ([0,20000,2000000],[1800,2100,2300],[0,50,1000])
-            elif self.stretch == 'CH':
+            elif self.region == 'CH':
                 goldparams = ([0,20000,2000000],[2700,2900,3100],[0,50,1000])
         
         guesses = [goldparams[0][1],goldparams[1][1],goldparams[2][1]]
@@ -222,7 +222,8 @@ class SFGspectrumForGUI():
         #background subtract and sum
         self.sumdata = 0
         self.sumfits = 0
-        plt.figure()
+        
+        fig_fg = plt.figure()
         for scan in self.scans:
             xdata = scan['wn']
             ydata = scan['counts']
@@ -236,24 +237,20 @@ class SFGspectrumForGUI():
         ax.set_facecolor('white')
         plt.ylabel('SFG Intensity [counts]')
         plt.xlabel('Wavenumber [cm^-1]')
-        if self.stretch == 'CH':
-            plt.xlim([2750, 3150])
-        if self.stretch == 'CN':
-            plt.xlim([1900, 2350])
+        if self.region == 'CH':
+            plt.xlim([2700, 3150])
+        if self.region == 'CN':
+            plt.xlim([2000, 2350])
 
 
-        plt.figure()
-        plt.plot(xdata,self.sumdata)
-        plt.plot(xdata,self.sumfits)
-
-        plt.figure()
+        fig_sum = plt.figure()
         plt.plot(xdata,self.sumdata/self.sumfits)
         
         self.gaussiannorm = self.sumdata/self.sumfits
         
-        if self.stretch == 'CH':
+        if self.region == 'CH':
             plt.xlim([2750, 3050])
-        if self.stretch == 'CN':
+        if self.region == 'CN':
             plt.xlim([2100, 2250])
         plt.ylim([0, 2])
         ax=plt.gca()
@@ -263,8 +260,9 @@ class SFGspectrumForGUI():
         plt.title(self.name)
         plt.xlabel('Wavenumber [cm$^{-1}$]')
         plt.ylabel('SFG Intensity [a.u.]')
-        set_size(3,3)
-        plt.tight_layout()
+        
+        #return the two figures
+        return (fig_fg, fig_sum)
             
     def fitLorentzians(self,scannum,goldparams,oscparams,scaling=None,xlim=None,fitrange=None):      
         scan = self.scans[scannum]
@@ -337,7 +335,6 @@ class SFGspectrumForGUI():
         plt.title(self.name)
         plt.xlabel('Wavenumber [cm$^{-1}$]')
         plt.ylabel('SFG Intensity [a.u.]')
-        set_size(3,3)
         plt.tight_layout()
         
         print()
@@ -382,7 +379,6 @@ class SFGspectrumForGUI():
         plt.title(self.name)
         plt.xlabel('Wavenumber [cm$^{-1}$]')
         plt.ylabel('SFG Intensity [a.u.]')
-        set_size(3,3)
         plt.tight_layout()
         
 #gaussian function to fit calibration spectra
@@ -392,17 +388,6 @@ def twogauss(x,a1,xcen1,sigma1,a2,xcen2,sigma2,off):
 def convert_SFG_to_IRwn(SFG,vis):
     IR = 1e7/((SFG**-1) - (vis**-1))**-1
     return IR
-    
-def set_size(w,h, ax=None):
-    """ w, h: width, height in inches """
-    if not ax: ax=plt.gca()
-    l = ax.figure.subplotpars.left
-    r = ax.figure.subplotpars.right
-    t = ax.figure.subplotpars.top
-    b = ax.figure.subplotpars.bottom
-    figw = float(w)/(r-l)
-    figh = float(h)/(t-b)
-    ax.figure.set_size_inches(figw, figh)
     
 def importSFG(name):
     if name.endswith(".asc"):
