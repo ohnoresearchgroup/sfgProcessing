@@ -288,7 +288,8 @@ class SFGspectrumForGUI():
         #return the two figures
         return (fig_fg, fig_sum)
             
-    def fitLorentzians(self,scannum,goldparams,oscparams,scaling=None,xlim=None,fitrange=None):      
+    def fitLorentzians(self,scannum,goldparams,oscparams,scaling=None,xlim=None,fitrange=None):
+        #organize inputs for fitting
         scan = self.scans[scannum]
         lw = [sublist[0] for sublist in goldparams]
         gs = [sublist[1] for sublist in goldparams]
@@ -303,10 +304,11 @@ class SFGspectrumForGUI():
             gs.extend(oscgs)
             up.extend(oscup)
             
-
+        #define individual lorentzian function
         def lorentzian(wn,amp,center,gamma,phase):
             return (amp/(wn-center+1j*gamma))*np.exp(1j*phase)
         
+        #define overall fit function
         def fitFlexible(wn, gold_amp, gold_center, gold_width, *oscparams):
             if len(oscparams) % 4 == 0:
                 numoscs = int(len(oscparams)/4)
@@ -327,74 +329,32 @@ class SFGspectrumForGUI():
             xdata = xdata[idx1:idx2]
             ydata = ydata[idx1:idx2]
         
+        #perform the fit
         popt, pcov = curve_fit(fitFlexible, xdata, ydata, p0=gs,bounds = [lw,up], maxfev = 10000)
         oscparamfit = popt[3:]
-        oscparamfit_error = np.sqrt(np.diag(pcov))[3:]
-
-        print(oscparamfit)
-        print(oscparamfit_error)
         
-        plt.figure()
-        plt.plot(xdata,ydata,'o')
-        plt.plot(xdata,fitFlexible(xdata,popt[0],popt[1],popt[2],*oscparamfit))
-        totalFit = fitFlexible(xdata,popt[0],popt[1],popt[2],*oscparamfit)
+        fig_fit = Figure(figsize=(fig_dim,fig_dim))
+        ax = fig_fit.add_subplot(111)
+        ax.plot(xdata,ydata,'o')
+        ax.plot(xdata,fitFlexible(xdata,popt[0],popt[1],popt[2],*oscparamfit))
+        
         numoscs = int(len(oscparamfit)/4)
         for i in range(numoscs):
-            plt.plot(xdata,np.sqrt(np.abs(lorentzian(xdata,popt[4*i+3],popt[4*i+4],popt[4*i+5],popt[4*i+6]))**2))
+            ax.plot(xdata,np.sqrt(np.abs(lorentzian(xdata,popt[4*i+3],popt[4*i+4],popt[4*i+5],popt[4*i+6]))**2))
         if xlim is not None:
-            plt.xlim(xlim[0],xlim[1])
-        ax=plt.gca()
+            ax.set_xlim(xlim[0],xlim[1])
         x0,x1 = ax.get_xlim()
         y0,y1 = ax.get_ylim()
         ax.set_aspect(abs(x1-x0)/abs(y1-y0))
         ax.set_title(self.name)
         ax.set_xlabel('Wavenumber [cm$^{-1}$]')
         ax.set_ylabel('SFG Intensity [a.u.]')
-        plt.tight_layout()
+        fig_fit.tight_layout()
         
-        print()
-        print('gold amp =',  np.round(popt[0],1))
-        print('gold center =',  np.round(popt[1],1))
-        print('gold width =',  np.round(popt[2],1))
-        print()
+        fitparams = popt
+        fitparams_error = np.sqrt(np.diag(pcov))
         
-        outputLorentzians = []
-        for i in range(int(len(oscparamfit)/4)):
-            l = [oscparamfit[4*i],oscparamfit[4*i+1],oscparamfit[4*i+2],oscparamfit[4*i+3]]
-            print("Osc ",i+1,"amp =", np.round(oscparamfit[4*i],1))
-            print("Osc ",i+1,"center =", np.round(oscparamfit[4*i+1],1))
-            print("Osc ",i+1,"gamma =", np.round(oscparamfit[4*i+2],1))
-            print("Osc ",i+1,"phase =", np.round(np.degrees(oscparamfit[4*i+3]),1))
-
-            print("Osc ",i+1,"amp_error =", np.round(oscparamfit_error[4*i],2))
-            print("Osc ",i+1,"center_error =", np.round(oscparamfit_error[4*i+1],2))
-            print("Osc ",i+1,"gamma_error =", np.round(oscparamfit_error[4*i+2],2))
-            print("Osc ",i+1,"phase_error  =", np.round(np.degrees(oscparamfit_error[4*i+3]),2))
-            print()
-            outputLorentzians.append(l)
-        
-        return (outputLorentzians,totalFit,ydata,xdata)
-
-    def plotLorentzians(self,listLorentzians,xlim=None,ylim=None):
-        def lorentzian(wn,amp,center,gamma,phase):
-            return (amp/(wn-center+1j*gamma))*np.exp(1j*phase)
-    
-        plt.figure()
-        plt.plot(self.scans[0]['wn'],self.gaussiannorm)
-        for l in listLorentzians:
-            plt.plot(self.scans[0]['wn'],np.sqrt(np.abs(lorentzian(self.scans[0]['wn'],l[0],l[1],l[2],l[3]))**2))    
-        if xlim is not None:
-            plt.xlim(xlim[0],xlim[1])
-        if ylim is not None:
-            plt.ylim(ylim[0],ylim[1])
-        ax=plt.gca()
-        x0,x1 = ax.get_xlim()
-        y0,y1 = ax.get_ylim()
-        ax.set_aspect(abs(x1-x0)/abs(y1-y0))
-        plt.title(self.name)
-        plt.xlabel('Wavenumber [cm$^{-1}$]')
-        plt.ylabel('SFG Intensity [a.u.]')
-        plt.tight_layout()
+        return (fig_fit, fitparams,fitparams_error)
         
 #gaussian function to fit calibration spectra
 def twogauss(x,a1,xcen1,sigma1,a2,xcen2,sigma2,off):

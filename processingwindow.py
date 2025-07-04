@@ -10,6 +10,7 @@ import tkinter as tk
 from tkinter import ttk
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import numpy as np
 
 
 class ProcessingWindow:
@@ -50,10 +51,10 @@ class ProcessingWindow:
         self.canvas_oneplot = None
         self.canvas_fitgaussianplot = None
         self.canvas_summaryplot = None
-        self.canvas_fit = None
         
         #initialize variable holding the fit window
-        self.window_fit = None
+        self.fit_window = None
+        self.fit_figure = None
         
         # ==== TOP LEFT: PLOT OF ALL SPECTRA ====
         
@@ -315,6 +316,7 @@ class ProcessingWindow:
                                   [float(x.strip()) for x in entries[4*i+6].get().strip("[]").split(",")]]
                 osc_params.append(one_osc_params)
             
+            #do the actual fit
             self.current_fit = self.spectrum.fitLorentzians(scan_num_fit,
                                                             gold_params,
                                                             osc_params,
@@ -322,28 +324,84 @@ class ProcessingWindow:
                                                             xlim=plotlims,
                                                             fitrange=fitrange)
             
-            # for i, entry in enumerate(entries):
-            #     val = entry.get()
-            #     print(f"{row_labels[i]}: {val}")
-            #     # Update corresponding read-only entry
-            #     readonly_entries[i].config(state='normal')
-            #     readonly_entries[i].delete(0, tk.END)
-            #     readonly_entries[i].insert(0, f"Echo: {val}")
-            #     readonly_entries[i].config(state='readonly')
             
+            #close window if it already exists
+            if self.fit_figure is not None:
+                plt.close(self.fit_figure)
+                self.fit_window.destroy()
+                
+            
+            #get figure from fit
+            self.fit_figure = self.current_fit[0]      
+            #make new window for fit
+            self.fit_window = tk.Toplevel(self.window)
+            
+            self.canvas_figfit = FigureCanvasTkAgg(self.fit_figure, master=self.fit_window)
+            self.canvas_figfit.draw()
+            self.canvas_figfit.get_tk_widget().pack()
+            
+            #get the parameters and errors
+            fitparams = self.current_fit[1]
+            fitparams_error = self.current_fit[2]
+            
+            #update output entries
+            for i in range(len(fitparams)):
+                readonly_entries[i].config(state='normal')
+                readonly_entries[i].delete(0, tk.END)
+                readonly_entries[i].insert(0, round(fitparams[i],2))
+                readonly_entries[i].config(state='readonly')           
+            if len(fitparams) < 11:
+                for i in range(11-len(fitparams)):
+                    readonly_entries[i+len(fitparams)].config(state='normal')
+                    readonly_entries[i+len(fitparams)].delete(0, tk.END)
+                    readonly_entries[i+len(fitparams)].insert(0, "")
+                    readonly_entries[i+len(fitparams)].config(state='readonly')
+            
+            #round the params and error
+            fitparams_rd = np.round(fitparams,3)
+            fitparams_error_rd = np.round(fitparams_error,3)
+            
+            #alternate params and error for output
+            self.interleaved = np.empty(fitparams_rd.size + fitparams_error_rd.size,
+                                        dtype=fitparams_rd.dtype)
+            self.interleaved[0::2] = fitparams_rd   # Fill even indices with params
+            self.interleaved[1::2] = fitparams_error_rd  # Fill odd indices with error
+            #turn from numpy array to string list
+            self.interleaved = [str(x) for x in self.interleaved]
+            #pad with empty strings if only one osc
+            if len(self.interleaved) < 22:
+                self.interleaved = self.interleaved + [""] * max(0, 22 - len(self.interleaved))
+                
+            #header
+            self.output_header = ['Gold Amp', 'Gold Amp Error',
+                                  'Gold Center', 'Gold Center Error',
+                                  'Gold Width', 'Gold Width Error',
+                                  'Osc1 Amp', 'Osc1 Amp Error',
+                                  'Osc1 Center', 'Osc1 Center Error',
+                                  'Osc1 Gamma', 'Osc1 Gamma Error',
+                                  'Osc1 Width', 'Osc1 Width Error',
+                                  'Osc2 Amp', 'Osc2 Amp Error',
+                                  'Osc2 Center',  'Osc2 Center Error',
+                                  'Osc2 Gamma', 'Osc2 Gamma Error',
+                                  'Osc2 Width','Osc2 Width Error']
+                    
+        #function to copy the fit to the clipboard    
         def output_fit():
+            csv_string = "\t".join(self.interleaved)
             root.clipboard_clear()            # Clear the clipboard
-            root.clipboard_append(self.current_fit)  # Append the variable value
+            root.clipboard_append(csv_string)  # Append the variable value
             root.update()  # Keeps clipboard data after the window is closed (on Windows)              
             print('fit copied to clipboard.')
             
+        #function to copy the header to the clipboard
         def copy_hdr():
+            #copy output header
+            csv_string = "\t".join(self.output_header)
             root.clipboard_clear()            # Clear the clipboard
-            root.clipboard_append(self.header)  # Append the variable value
+            root.clipboard_append(csv_string)  # Append the variable value
             root.update()  # Keeps clipboard data after the window is closed (on Windows)
-            print('fit copied to clipboard.')
+            print('header copied to clipboard.')
              
-            
 
         fit_btn = tk.Button(lower_middle_inner, bg="yellow", text="Fit", command=perform_fit)
         fit_btn.grid(row=8, column=0, pady=(5, 5), padx=2, sticky="w")
@@ -351,7 +409,7 @@ class ProcessingWindow:
         output_hdr_btn = tk.Button(lower_middle_inner, text="Copy Hdr", command=copy_hdr)
         output_hdr_btn.grid(row=9, column=0, pady=(5, 5), padx=2, sticky="w")
         
-        output_btn = tk.Button(lower_middle_inner, text="Copy", command=output_fit)
+        output_btn = tk.Button(lower_middle_inner, text="Copy Fit", command=output_fit)
         output_btn.grid(row=10, column=0, pady=(5, 5), padx=2, sticky="w")
 
         # --- Column Header Labels ---
