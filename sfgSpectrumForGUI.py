@@ -207,9 +207,9 @@ class SFGspectrumForGUI():
         popt,pcov = curve_fit(twogauss,xShort,yShort,p0=guesses,bounds = [lw,up],maxfev = 10000)
         
         #plot with fit and points
-        ax.plot(xShort,twogauss(xShort,*popt),'ro:',label='fit')
-        ax.plot(self.calib_spectrum['wn'][idx2],self.calib_spectrum['counts'][idx2],'o',markersize=5)
-        ax.plot(self.calib_spectrum['wn'][idx1],self.calib_spectrum['counts'][idx1],'o',markersize=5)
+        ax.plot(xShort,twogauss(xShort,*popt),'ro:',label='fit',markersize=3)
+        ax.plot(self.calib_spectrum['wn'][idx2],self.calib_spectrum['counts'][idx2],'o',markersize=3)
+        ax.plot(self.calib_spectrum['wn'][idx1],self.calib_spectrum['counts'][idx1],'o',markersize=3)
         ax.set_title('Fitted ANC Calibration')
         ax.set_xlabel('Wavenumber [cm$^{-1}$]')
         ax.set_ylabel('SFG Intensity [a.u.]')

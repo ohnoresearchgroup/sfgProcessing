@@ -105,7 +105,7 @@ class ProcessingWindow:
             x2_entry.insert(0, "2860")  # Default value for upper lim
         elif self.spectrum.region == 'CN':
             x1_entry.insert(0,"2200")
-            x2_entry.inser(0,"2300")          
+            x2_entry.insert(0,"2300")          
         
 
         
