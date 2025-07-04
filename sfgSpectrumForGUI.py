@@ -294,7 +294,6 @@ class SFGspectrumForGUI():
         gs = [sublist[1] for sublist in goldparams]
         up = [sublist[2] for sublist in goldparams]
         
-        oscnum = len(oscparams)
         for osc in oscparams:
             osclw = [sublist[0] for sublist in osc]
             oscgs = [sublist[1] for sublist in osc]
@@ -303,10 +302,6 @@ class SFGspectrumForGUI():
             lw.extend(osclw)
             gs.extend(oscgs)
             up.extend(oscup)
-                
-        print(lw)
-        print(gs)
-        print(up)
             
 
         def lorentzian(wn,amp,center,gamma,phase):
@@ -338,10 +333,6 @@ class SFGspectrumForGUI():
 
         print(oscparamfit)
         print(oscparamfit_error)
-
-        
-
-
         
         plt.figure()
         plt.plot(xdata,ydata,'o')

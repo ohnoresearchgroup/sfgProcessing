@@ -297,6 +297,8 @@ class ProcessingWindow:
 
         # --- Submit Button (also in left column) ---
         def perform_fit():
+            scan_num_fit = int(fit_dropdown_var.get())
+            
             plotlims = [float(plotlim_entry1.get()), float(plotlim_entry2.get())]
             fitrange = [float(fitlim_entry1.get()),float(fitlim_entry2.get())]
             gold_params = [[float(x.strip()) for x in entries[0].get().strip("[]").split(",")],
@@ -313,6 +315,12 @@ class ProcessingWindow:
                                   [float(x.strip()) for x in entries[4*i+6].get().strip("[]").split(",")]]
                 osc_params.append(one_osc_params)
             
+            self.current_fit = self.spectrum.fitLorentzians(scan_num_fit,
+                                                            gold_params,
+                                                            osc_params,
+                                                            scaling=None,
+                                                            xlim=plotlims,
+                                                            fitrange=fitrange)
             
             # for i, entry in enumerate(entries):
             #     val = entry.get()
@@ -351,17 +359,18 @@ class ProcessingWindow:
         tk.Label(lower_middle_inner, text="Output", font=("Arial", 10, "bold")).grid(row=0, column=3, padx=5, pady=5)
 
         # --- Entry Fields with Row Labels ---
-        row_labels = [
-            'Gold Amp', 'Gold Center', 'Gold Width',
-            'Osc1 Amp', 'Osc1 Center', 'Osc1 Gamma', 'Osc1 Width',
-            'Osc2 Amp', 'Osc2 Center', 'Osc2 Gamma', 'Osc2 Width'
-        ]
-
-        defaults = [
-            "[0, 1, 2]", "[2820, 2880, 2950]", "[10, 100, 1000]",
-            "[0.01, 1.5, 50]", "[2820, 2880, 2950]", "[1, 10, 30]", "[0, 3.1415, 6.2830]",
-            "[0.01, 1.5, 50]", "[2820, 2880, 2950]", "[1, 10, 30]", "[0, 3.1415, 6.2830]"
-        ]
+        row_labels = ['Gold Amp', 'Gold Center', 'Gold Width',
+                      'Osc1 Amp', 'Osc1 Center', 'Osc1 Gamma', 'Osc1 Width',
+                      'Osc2 Amp', 'Osc2 Center', 'Osc2 Gamma', 'Osc2 Width']
+        
+        if self.spectrum.region == 'CH':
+            defaults = ["[0, 1, 2]", "[2820, 2880, 2950]", "[10, 100, 1000]",
+                        "[0.01, 1.5, 50]", "[2820, 2880, 2950]", "[1, 10, 30]", "[0, 3.1415, 6.2830]",
+                        "[0.01, 1.5, 50]", "[2820, 2880, 2950]", "[1, 10, 30]", "[0, 3.1415, 6.2830]"]
+        elif self.spectrum.region == 'CN':
+            defaults = ["[0, 1, 2]", "[2000, 2100, 2300]", "[10, 100, 1000]",
+                        "[0.01, 1.5, 50]", "[2000, 2100, 2300]", "[1, 10, 30]", "[0, 3.1415, 6.2830]",
+                        "[0.01, 1.5, 50]", "[2000, 2100, 2300]", "[1, 10, 30]", "[0, 3.1415, 6.2830]"]            
 
         entries = []
         readonly_entries = []
