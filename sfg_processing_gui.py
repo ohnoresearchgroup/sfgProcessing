@@ -110,8 +110,7 @@ class FolderOrganizerApp:
         
         spectrum = SFGspectrumForGUI(self.path,region,name,sfg_files,bg_files,calib_files)
         
-        ProcessingWindow(spectrum)
-        
+        ProcessingWindow(spectrum,root)     
 
     def set_combobox_width(self,combobox, items):
         if items:

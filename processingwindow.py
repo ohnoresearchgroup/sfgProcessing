@@ -13,9 +13,10 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 
 class ProcessingWindow:
-    def __init__(self, spectrum):
+    def __init__(self, spectrum,root):
         
         ## ==== SETUP CODE ======
+        self.root = root
         
         #associate the spectrum with the window
         self.spectrum = spectrum
@@ -49,9 +50,10 @@ class ProcessingWindow:
         self.canvas_oneplot = None
         self.canvas_fitgaussianplot = None
         self.canvas_summaryplot = None
+        self.canvas_fit = None
         
-        #initialize variable for holding the output path
-        self.output_path = None
+        #initialize variable holding the fit window
+        self.window_fit = None
         
         # ==== TOP LEFT: PLOT OF ALL SPECTRA ====
         
@@ -270,6 +272,12 @@ class ProcessingWindow:
         plotlim_entry1.grid(row=2, column=0, sticky="w", padx=5, pady=2)
         plotlim_entry2 = tk.Entry(lower_middle_inner, width=8)
         plotlim_entry2.grid(row=3, column=0, sticky="w", padx=5, pady=2)
+
+        tk.Label(lower_middle_inner, text="Fit Lim:").grid(row=4, column=0, padx=2, pady=(5, 2), sticky="w")
+        fitlim_entry1 = tk.Entry(lower_middle_inner, width=8)
+        fitlim_entry1.grid(row=5, column=0, sticky="w", padx=5, pady=2)
+        fitlim_entry2 = tk.Entry(lower_middle_inner, width=8)
+        fitlim_entry2.grid(row=6, column=0, sticky="w", padx=5, pady=2)
         
         #default plot limits for fit plot
         if self.spectrum.region == 'CH':
@@ -278,13 +286,7 @@ class ProcessingWindow:
         if self.spectrum.region =='CN':
             plotlim_entry1.insert(0, "2000")  # Default value for lower x
             plotlim_entry2.insert(0, "2300")  # Default value for upper x
-
-        tk.Label(lower_middle_inner, text="Fit Lim:").grid(row=4, column=0, padx=2, pady=(5, 2), sticky="w")
-        fitlim_entry1 = tk.Entry(lower_middle_inner, width=8)
-        fitlim_entry1.grid(row=5, column=0, sticky="w", padx=5, pady=2)
-        fitlim_entry2 = tk.Entry(lower_middle_inner, width=8)
-        fitlim_entry2.grid(row=6, column=0, sticky="w", padx=5, pady=2)
-        
+   
         #default plot limits for fit plot
         if self.spectrum.region == 'CH':
             fitlim_entry1.insert(0, "2800")  # Default value for lower x
@@ -295,9 +297,22 @@ class ProcessingWindow:
 
         # --- Submit Button (also in left column) ---
         def perform_fit():
-            print("Dropdown value:", fit_dropdown_var.get())
-            print("Extra1:", plotlim_entry1.get(), plotlim_entry2.get())
-            print("Extra2:", fitlim_entry1.get(), fitlim_entry2.get())
+            plotlims = [float(plotlim_entry1.get()), float(plotlim_entry2.get())]
+            fitrange = [float(fitlim_entry1.get()),float(fitlim_entry2.get())]
+            gold_params = [[float(x.strip()) for x in entries[0].get().strip("[]").split(",")],
+                           [float(x.strip()) for x in entries[1].get().strip("[]").split(",")],
+                           [float(x.strip()) for x in entries[2].get().strip("[]").split(",")]]
+            
+            num_oscs = int(oscnum_dropdown_var.get())
+            
+            osc_params = []
+            for i in range(num_oscs):
+                one_osc_params = [[float(x.strip()) for x in entries[4*i+3].get().strip("[]").split(",")],
+                                  [float(x.strip()) for x in entries[4*i+4].get().strip("[]").split(",")],
+                                  [float(x.strip()) for x in entries[4*i+5].get().strip("[]").split(",")],
+                                  [float(x.strip()) for x in entries[4*i+6].get().strip("[]").split(",")]]
+                osc_params.append(one_osc_params)
+            
             
             # for i, entry in enumerate(entries):
             #     val = entry.get()
@@ -308,21 +323,27 @@ class ProcessingWindow:
             #     readonly_entries[i].insert(0, f"Echo: {val}")
             #     readonly_entries[i].config(state='readonly')
             
-        def output_fit():              
-            print('printing fit.')
+        def output_fit():
+            root.clipboard_clear()            # Clear the clipboard
+            root.clipboard_append(self.current_fit)  # Append the variable value
+            root.update()  # Keeps clipboard data after the window is closed (on Windows)              
+            print('fit copied to clipboard.')
             
-        def output_path():
-            self.output_path = tk.filedialog.askdirectory()
-            output_btn.config(state='normal') 
+        def copy_hdr():
+            root.clipboard_clear()            # Clear the clipboard
+            root.clipboard_append(self.header)  # Append the variable value
+            root.update()  # Keeps clipboard data after the window is closed (on Windows)
+            print('fit copied to clipboard.')
+             
             
 
         fit_btn = tk.Button(lower_middle_inner, bg="yellow", text="Fit", command=perform_fit)
         fit_btn.grid(row=8, column=0, pady=(5, 5), padx=2, sticky="w")
         
-        output_folder_btn = tk.Button(lower_middle_inner, text="Out Path", command=output_path)
-        output_folder_btn.grid(row=9, column=0, pady=(5, 5), padx=2, sticky="w")
+        output_hdr_btn = tk.Button(lower_middle_inner, text="Copy Hdr", command=copy_hdr)
+        output_hdr_btn.grid(row=9, column=0, pady=(5, 5), padx=2, sticky="w")
         
-        output_btn = tk.Button(lower_middle_inner, text="Print", command=output_fit,state='disabled')
+        output_btn = tk.Button(lower_middle_inner, text="Copy", command=output_fit)
         output_btn.grid(row=10, column=0, pady=(5, 5), padx=2, sticky="w")
 
         # --- Column Header Labels ---
