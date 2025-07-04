@@ -371,9 +371,11 @@ class ProcessingWindow:
             #pad with empty strings if only one osc
             if len(self.interleaved) < 22:
                 self.interleaved = self.interleaved + [""] * max(0, 22 - len(self.interleaved))
-                
+            self.interleaved.insert(0,str(scan_num_fit))
+            self.interleaved.insert(0,self.spectrum.name)
             #header
-            self.output_header = ['Gold Amp', 'Gold Amp Error',
+            self.output_header = ['Sample Name','Scan Num',
+                                  'Gold Amp', 'Gold Amp Error',
                                   'Gold Center', 'Gold Center Error',
                                   'Gold Width', 'Gold Width Error',
                                   'Osc1 Amp', 'Osc1 Amp Error',
