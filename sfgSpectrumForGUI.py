@@ -15,7 +15,7 @@ mpl.rcParams.update({
 })
 
 #dimension of figures
-fig_dim = 1.7
+fig_dim = 1.45
 fig_dpi = 200
 
 class SFGspectrumForGUI():
@@ -149,7 +149,7 @@ class SFGspectrumForGUI():
         lw = [0,2700,1,0,2700,10,0]
         up = [self.calib_spectrum['counts'].max(),3000,50,self.calib_spectrum['counts'].max()*2,3100,1000,self.calib_spectrum['counts'].max()]
        
-        fig = Figure(figsize=(fig_dim,fig_dim), dpi=fig_dpi)
+        fig = Figure(figsize=(fig_dim*0.75,fig_dim*0.75), dpi=fig_dpi)
         ax = fig.add_subplot(111)
         ax.plot(self.calib_spectrum['wn'][idx2-5:idx1+5],self.calib_spectrum['counts'][idx2-5:idx1+5])
         
@@ -201,7 +201,7 @@ class SFGspectrumForGUI():
         lw = [0,2100,1,0,2100,1,0]
         up = [self.calib_spectrum['counts'].max(),2300,1000,self.calib_spectrum['counts'].max()*2,2300,1000,self.calib_spectrum['counts'].max()]
        
-        fig = Figure(figsize=(fig_dim,fig_dim), dpi=fig_dpi)
+        fig = Figure(figsize=(fig_dim*0.75,fig_dim*0.75), dpi=fig_dpi)
         ax = fig.add_subplot(111)
         ax.plot(self.calib_spectrum['wn'][idx2-5:idx1+5],self.calib_spectrum['counts'][idx2-5:idx1+5])
         
@@ -212,9 +212,9 @@ class SFGspectrumForGUI():
         ax.plot(xShort,twogauss(xShort,*popt),'ro:',label='fit',markersize=1)
         ax.plot(self.calib_spectrum['wn'][idx2],self.calib_spectrum['counts'][idx2],'o',markersize=1)
         ax.plot(self.calib_spectrum['wn'][idx1],self.calib_spectrum['counts'][idx1],'o',markersize=1)
-        ax.set_title('Fitted ANC Calibration')
-        ax.set_xlabel('Wavenumber [cm$^{-1}$]')
-        ax.set_ylabel('SFG Intensity [a.u.]')
+        #ax.set_title('Fitted ANC Calibration')
+        #ax.set_xlabel('Wavenumber [cm$^{-1}$]')
+        #ax.set_ylabel('SFG Intensity [a.u.]')
         fig.tight_layout() 
         
         #set shift for this peak
@@ -337,7 +337,7 @@ class SFGspectrumForGUI():
         
         fig_fit = Figure(figsize=(fig_dim,fig_dim), dpi=fig_dpi)
         ax = fig_fit.add_subplot(111)
-        ax.plot(xdata,ydata,'o')
+        ax.plot(xdata,ydata,'o',markersize= 1.2)
         ax.plot(xdata,fitFlexible(xdata,popt[0],popt[1],popt[2],*oscparamfit))
         
         numoscs = int(len(oscparamfit)/4)
