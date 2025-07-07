@@ -24,7 +24,7 @@ class ProcessingWindow:
         
         #create the window and label
         self.window = tk.Toplevel()
-        self.window.geometry("1200x800")
+        self.window.geometry("1200x850")
         tk.Label(self.window, text=f"{self.spectrum.name}", font=("Arial", 10)).grid(row=0, column=0, pady=2)
         
         # Create a parent frame to hold 6 panels
